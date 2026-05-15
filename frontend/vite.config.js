@@ -15,11 +15,28 @@ export default defineConfig({
     // Generate separate chunks for better caching
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor:  ['react', 'react-dom', 'react-router-dom'],
-          ui:      ['lucide-react'],
-          http:    ['axios'],
-        },
+       manualChunks(id) {
+  if (id.includes('node_modules')) {
+
+    if (
+      id.includes('react') ||
+      id.includes('react-dom') ||
+      id.includes('react-router-dom')
+    ) {
+      return 'vendor'
+    }
+
+    if (id.includes('lucide-react')) {
+      return 'ui'
+    }
+
+    if (id.includes('axios')) {
+      return 'http'
+    }
+
+    return 'vendor'
+  }
+},
         // Deterministic filenames — good for SW cache busting
         chunkFileNames:  'assets/[name]-[hash].js',
         assetFileNames:  'assets/[name]-[hash][extname]',
