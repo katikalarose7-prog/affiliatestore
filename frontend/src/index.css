@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+/* ─── LIGHT MODE ─── */
+:root {
+  --bg:          #f8faff;
+  --bg2:         #eef2ff;
+  --bg3:         #e4eaff;
+  --bg4:         #dae1ff;
+  --card-bg:     #ffffff;
+  --card-bdr:    #e2e8f0;
+  --nav-bg:      rgba(255,255,255,0.92);
+  --nav-bdr:     #e2e8f0;
+  --cat-bg:      rgba(255,255,255,0.95);
+  --cat-bdr:     #e2e8f0;
+  --border:      #e2e8f0;
+  --border2:     #bfdbfe;
+  --text:        #0f172a;
+  --text2:       #475569;
+  --text3:       #94a3b8;
+  --text4:       #cbd5e1;
+  --accent:      #2563eb;
+  --accent-h:    #1d4ed8;
+  --accent-lt:   #3b82f6;
+  --accent-bg:   #eff6ff;
+  --accent-bdr:  #bfdbfe;
+  --indigo:      #6366f1;
+  --gold:        #f59e0b;
+  --hot:         #ef4444;
+  --success:     #10b981;
+  --shadow-sm:   0 1px 3px rgba(15,23,42,0.07), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow:      0 4px 16px rgba(37,99,235,0.10), 0 1px 4px rgba(15,23,42,0.06);
+  --shadow-lg:   0 12px 40px rgba(37,99,235,0.14), 0 4px 12px rgba(15,23,42,0.08);
+  --shadow-card: 0 2px 8px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+  --font-head:   'Outfit', sans-serif;
+  --font-body:   'Plus Jakarta Sans', sans-serif;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+}
+
+/* ─── DARK MODE ─── */
+[data-theme="dark"] {
+  --bg:          #060614;
+  --bg2:         #0d0d1f;
+  --bg3:         #12122a;
+  --bg4:         #1a1a35;
+  --card-bg:     #0f0f26;
+  --card-bdr:    rgba(99,102,241,0.14);
+  --nav-bg:      rgba(6,6,20,0.94);
+  --nav-bdr:     rgba(99,102,241,0.14);
+  --cat-bg:      rgba(9,9,20,0.94);
+  --cat-bdr:     rgba(99,102,241,0.12);
+  --border:      rgba(99,102,241,0.15);
+  --border2:     rgba(99,102,241,0.28);
+  --text:        #f1f1fc;
+  --text2:       #a5a5c2;
+  --text3:       #64648a;
+  --text4:       #3d3d60;
+  --accent:      #6366f1;
+  --accent-h:    #4f46e5;
+  --accent-lt:   #818cf8;
+  --accent-bg:   rgba(99,102,241,0.12);
+  --accent-bdr:  rgba(99,102,241,0.28);
+  --indigo:      #818cf8;
+  --gold:        #fbbf24;
+  --hot:         #ef4444;
+  --success:     #10b981;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.3);
+  --shadow:      0 4px 20px rgba(0,0,0,0.4);
+  --shadow-lg:   0 12px 48px rgba(0,0,0,0.6);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.35);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button{cursor:pointer;font-family:var(--font-body);border:none;outline:none}
+input,select,textarea{font-family:var(--font-body);outline:none}
+.container{max-width:1300px;margin:0 auto;padding:0 clamp(16px,4vw,28px)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* Keyframes */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideLeft{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes slideRight{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+@keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes floatSlow{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+@keyframes glow{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes bannerProgress{from{width:0}to{width:100%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes badgePop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+
+.fade-up{animation:fadeUp 0.45s cubic-bezier(.22,1,.36,1) both}
+
+/* Skeleton */
+.skeleton{
+  background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
+  background-size:600px 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:var(--radius)
+}
+
+/* Spinner */
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite}
+
+/* Focus */
+input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(99,102,241,0.14)!important}
+
+/* Theme transition — smooth but don't break card hover */
+body *{transition:background-color .25s ease,border-color .25s ease,color .2s ease,box-shadow .2s ease}
+.product-card,.product-card *,.banner-slide,.banner-slide *{transition:none!important}
+.product-card{transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease,border-color .3s ease!important}
+.product-card:hover{transform:translateY(-6px)!important;box-shadow:var(--shadow-lg)!important;border-color:var(--accent-bdr)!important}
+.product-card:hover .card-img{transform:scale(1.07)!important}
+
+/* Touch friendly */
+@media(max-width:640px){
+  button,a{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .cat-pill-btn{min-height:36px!important}
+}

@@ -1,0 +1,60 @@
+{
+  "name": "DealNest — Handpicked Amazon Deals",
+  "short_name": "DealNest",
+  "description": "Discover handpicked Amazon affiliate deals on Beauty, Electronics, Fashion, Kitchen, Fitness and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#2563eb",
+  "theme_color": "#2563eb",
+  "scope": "/",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["shopping", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/og-image.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "DealNest Homepage"
+    }
+  ],
+  "icons": [
+    { "src": "/icons/icon-72x72.svg",   "sizes": "72x72",   "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-96x96.svg",   "sizes": "96x96",   "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-128x128.svg", "sizes": "128x128", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-144x144.svg", "sizes": "144x144", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-152x152.svg", "sizes": "152x152", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-192x192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-384x384.svg", "sizes": "384x384", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-512x512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512x512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Electronics",
+      "short_name": "Electronics",
+      "description": "Shop top electronics deals",
+      "url": "/?category=Electronics",
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Featured Deals",
+      "short_name": "Featured",
+      "description": "View featured products",
+      "url": "/?featured=true",
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Beauty & Fashion",
+      "short_name": "Beauty",
+      "description": "Shop beauty and fashion",
+      "url": "/?category=Beauty",
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

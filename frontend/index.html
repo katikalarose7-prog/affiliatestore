@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- ── Primary Meta ─────────────────────────────────────── -->
+    <title>DealNest — Handpicked Amazon Deals</title>
+    <meta name="description" content="DealNest curates the best Amazon affiliate deals across Beauty, Electronics, Fashion, Kitchen, Fitness and more." />
+    <meta name="keywords"    content="amazon deals, affiliate products, best deals, electronics, beauty, fashion, online shopping" />
+    <meta name="author"      content="DealNest" />
+    <meta name="robots"      content="index, follow" />
+    <link rel="canonical"    href="https://dealnest.pages.dev/" />
+
+    <!-- ── PWA Manifest ─────────────────────────────────────── -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ── Theme Color (browser chrome + PWA splash) ────────── -->
+    <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#060614" media="(prefers-color-scheme: dark)" />
+
+    <!-- ── PWA / Mobile App Meta ────────────────────────────── -->
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-capable"          content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title"            content="DealNest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+    <!-- iOS splash screens (optional — add PNGs for full support) -->
+
+    <!-- Android / Chrome -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name"       content="DealNest" />
+
+    <!-- Windows tiles -->
+    <meta name="msapplication-TileColor" content="#2563eb" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.svg" />
+    <meta name="msapplication-config"    content="none" />
+
+    <!-- ── Favicon ───────────────────────────────────────────── -->
+    <link rel="icon"             type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon"    type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- ── Open Graph (LinkedIn, WhatsApp, Facebook) ─────────── -->
+    <meta property="og:type"         content="website" />
+    <meta property="og:url"          content="https://dealnest.pages.dev/" />
+    <meta property="og:site_name"    content="DealNest" />
+    <meta property="og:title"        content="DealNest — Handpicked Amazon Deals" />
+    <meta property="og:description"  content="Discover curated Amazon affiliate products across Beauty, Electronics, Fashion and more. Handpicked deals, updated daily." />
+    <meta property="og:image"        content="https://dealnest.pages.dev/og-image.svg" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"    content="DealNest — Handpicked Amazon Deals" />
+    <meta property="og:locale"       content="en_IN" />
+
+    <!-- ── Twitter Card ─────────────────────────────────────── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:url"         content="https://dealnest.pages.dev/" />
+    <meta name="twitter:title"       content="DealNest — Handpicked Amazon Deals" />
+    <meta name="twitter:description" content="Discover curated Amazon affiliate products across Beauty, Electronics, Fashion and more." />
+    <meta name="twitter:image"       content="https://dealnest.pages.dev/og-image.svg" />
+
+    <!-- ── Structured Data ──────────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "DealNest",
+      "url": "https://dealnest.pages.dev/",
+      "description": "Handpicked Amazon affiliate product deals",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://dealnest.pages.dev/?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ── Register Service Worker ──────────────────────────── -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .then(reg => {
+              console.log('[PWA] Service Worker registered:', reg.scope)
+
+              // Check for updates every 30 minutes
+              setInterval(() => reg.update(), 30 * 60 * 1000)
+
+              // Notify user when new version available
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New version ready — you can show a toast here
+                    console.log('[PWA] New version available — reload to update')
+                  }
+                })
+              })
+            })
+            .catch(err => console.warn('[PWA] SW registration failed:', err))
+        })
+      }
+    </script>
+  </body>
+</html>

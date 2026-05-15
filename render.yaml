@@ -1,0 +1,29 @@
+# render.yaml — drop this in your project root
+# Render will auto-detect and deploy both services
+
+services:
+  # ── Backend (Node/Express) ─────────────────────────────────────────
+  - type: web
+    name: dealnest-api
+    env: node
+    region: singapore        # closest to India
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000          # Render sets this automatically too
+      - key: MONGO_URI
+        sync: false           # you paste this in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure value
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false           # paste your Cloudflare Pages URL here
