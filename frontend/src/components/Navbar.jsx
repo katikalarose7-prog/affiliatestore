@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useTheme } from '../context/Themecontext'
 import { ShoppingBag, LayoutDashboard, LogOut, Search, Sun, Moon, X } from 'lucide-react'
 import { useState } from 'react'
 
