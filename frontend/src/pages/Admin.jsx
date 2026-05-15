@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useTheme } from '../context/Themecontext'
 import { useNavigate, Link } from 'react-router-dom'
 import StarRating from '../components/StarRating'
 import {

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useTheme } from '../context/Themecontext'
 import { Lock, User, Eye, EyeOff, ShoppingBag, Sun, Moon, ArrowLeft, Shield } from 'lucide-react'
 import { API } from '../config'
 
