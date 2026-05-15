@@ -34,7 +34,7 @@ export default function Navbar({ onSearch, searchValue }) {
           <div style={s.logoIcon}>
             <ShoppingBag size={15} color="#fff" strokeWidth={2.5}/>
           </div>
-          <span style={s.logoText}>Deal<span style={{color:'var(--accent)'}}>Nest</span></span>
+          <span style={s.logoText}>Prime<span style={{color:'var(--accent)'}}>Offers</span></span>
         </Link>
 
         {/* Desktop search */}

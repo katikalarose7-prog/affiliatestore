@@ -172,7 +172,7 @@ export default function Admin() {
       <aside className={`admin-sidebar${sidebarOpen?' open':''}`} style={s.sidebar}>
         <div style={s.sideTop}>
           <div style={s.sideLogo}><ShoppingBag size={15} color="#fff"/></div>
-          <span style={s.sideLogoText}>Deal<span style={{color:'var(--accent)'}}>Nest</span></span>
+          <span style={s.sideLogoText}>Prime<span style={{color:'var(--accent)'}}>Offers</span></span>
         </div>
 
         <nav style={s.nav}>

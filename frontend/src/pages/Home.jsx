@@ -27,7 +27,7 @@ function PrivacyModal({ onClose }) {
     ['5. Third-Party Links','Our site links to Amazon and other third-party sites. Once you leave, their own privacy policies apply.'],
     ['6. Security','Since we collect no personal data, there is minimal data risk. Our admin panel uses JWT authentication with token expiry.'],
     ['7. Changes','This policy may be updated. Changes are reflected on this page with a new "Last updated" date.'],
-    ['8. Contact','Questions? Email us at privacy@dealnest.in'],
+    ['8. Contact','Questions? Email us at privacy@primeoffers.in'],
   ]
   return (
     <div style={ps.overlay} onClick={e => e.target===e.currentTarget && onClose()}>
@@ -282,7 +282,7 @@ export default function Home() {
         <div className="container">
           <div style={s.footerTop}>
             <div>
-              <div style={s.footerLogo}>Deal<span style={{color:'var(--accent)'}}>Nest</span></div>
+              <div style={s.footerLogo}>Prime<span style={{color:'var(--accent)'}}>Offers</span></div>
               <p style={{color:'var(--text3)',fontSize:'12px',marginTop:'4px'}}>Handpicked affiliate deals you can trust.</p>
             </div>
             <div style={s.footerLinks}>
@@ -294,7 +294,7 @@ export default function Home() {
             </div>
           </div>
           <div style={s.footerBottom}>
-            <p style={{color:'var(--text3)',fontSize:'11px'}}>© {new Date().getFullYear()} DealNest. All rights reserved.</p>
+            <p style={{color:'var(--text3)',fontSize:'11px'}}>© {new Date().getFullYear()} PrimeOffers. All rights reserved.</p>
             <p style={{color:'var(--text3)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
               Contains affiliate links. We may earn a commission on purchases.
             </p>
