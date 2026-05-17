@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +14,8 @@ export default function AdminLogin() {
   const { login }    = useAuth()
   const { isDark, toggle } = useTheme()
   const navigate     = useNavigate()
+  const location     = useLocation()
+  const isExpired    = new URLSearchParams(location.search).get('expired') === '1'
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -61,6 +63,14 @@ export default function AdminLogin() {
           <h1 style={s.title}>Admin Portal</h1>
           <p style={s.subtitle}>Secure access to your store dashboard</p>
         </div>
+
+        {/* Expired token notice */}
+        {isExpired && (
+          <div style={{...s.notice, background:'rgba(239,68,68,0.08)', borderColor:'rgba(239,68,68,0.25)', color:'var(--hot)', marginBottom:'12px'}}>
+            <span style={{fontSize:'14px'}}>⚠️</span>
+            <span>Your session expired. Please sign in again.</span>
+          </div>
+        )}
 
         {/* Security notice */}
         <div style={s.notice}>

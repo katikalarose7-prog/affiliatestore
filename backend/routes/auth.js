@@ -10,7 +10,7 @@ router.post('/login', (req, res) => {
     username === process.env.ADMIN_USERNAME &&
     password === process.env.ADMIN_PASSWORD
   ) {
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
     return res.json({ token, username });
   }
 
@@ -18,3 +18,4 @@ router.post('/login', (req, res) => {
 });
 
 module.exports = router;
+
