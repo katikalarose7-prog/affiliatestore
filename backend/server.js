@@ -118,9 +118,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Root route — confirms backend is live
+app.get('/', (req, res) => {
+  res.json({
+    status:  'online',
+    name:    'PrimeOffers Store API',
+    version: '1.0.0',
+    docs:    'Use /health to check uptime. API endpoints start with /api/',
+  });
+});
+
 // 404 fallback
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+  res.status(404).json({ message: 'Route not found', hint: 'API routes start with /api/' });
 });
 
 // Global error handler
