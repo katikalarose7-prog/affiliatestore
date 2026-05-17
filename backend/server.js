@@ -15,24 +15,30 @@ app.set('trust proxy', 1);
 // ─── CORS ──────────────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
   .split(',')
-  .map(o => o.trim().replace(/\/$/, '')); // strip trailing slashes
+  .map(o => o.trim().replace(/\/$/, ''));
 
 console.log('✅  Allowed Origins:', allowedOrigins);
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (Postman, mobile apps, curl)
+    // Allow no-origin requests (Postman, curl, mobile)
     if (!origin) return callback(null, true);
-    // Strip trailing slash from incoming origin before comparing
     const clean = origin.replace(/\/$/, '');
     if (allowedOrigins.includes(clean)) return callback(null, true);
-    console.warn('❌  CORS blocked:', origin);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+    console.warn('❌  CORS blocked origin:', origin);
+    console.warn('   Allowed:', allowedOrigins);
+    callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length'],
+  optionsSuccessStatus: 200, // Some browsers send 204 issues
+};
+
+// Handle preflight OPTIONS requests BEFORE any other middleware
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 // ─── Security Headers (Helmet) ─────────────────────────────────────────────
 app.use(helmet({
