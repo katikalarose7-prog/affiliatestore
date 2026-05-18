@@ -13,7 +13,32 @@ import {
 } from 'lucide-react'
 import { API, STATIC } from '../config'
 
-const CATS  = ['Beauty','Headphones','Electronics','Fashion','Kitchen','Fitness','Books','Home Decor']
+const CATS = [
+  'Beauty',
+  'Electronics',
+  'Fashion',
+  'Home & Kitchen',
+  'Mobiles',
+  'Laptops',
+  'Headphones',
+  'Smart Watches',
+  'Fitness',
+  'Books',
+  'Home Decor',
+  'Gaming',
+  'Toys',
+  'Grocery',
+  'Footwear',
+  'Bags',
+  'Jewellery',
+  'Skincare',
+  'Hair Care',
+  'Furniture',
+  'Office Supplies',
+  'Pet Supplies',
+  'Baby Products',
+  'Automotive'
+];
 const EMPTY = { name:'', description:'', price:'', category:'Electronics', affiliateLink:'', rating:'4', featured:false }
 const EMPTY_BANNER = { title:'', subtitle:'', badge:'', ctaText:'Shop Now', ctaLink:'', bgColor:'#1e3a8a', bgColor2:'#4338ca', accentColor:'#fbbf24', active:true, order:0 }
 

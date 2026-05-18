@@ -9,13 +9,60 @@ import { API } from '../config'
 
 const DEFAULT = { category:'All', minPrice:'', maxPrice:'', minRating:0, featured:false }
 
-const CATS = ['All','Beauty','Headphones','Electronics','Fashion','Kitchen','Fitness','Books','Home Decor']
+const CATS = [
+  'All',
+  'Beauty',
+  'Electronics',
+  'Fashion',
+  'Home & Kitchen',
+  'Mobiles',
+  'Laptops',
+  'Headphones',
+  'Smart Watches',
+  'Fitness',
+  'Books',
+  'Home Decor',
+  'Gaming',
+  'Toys',
+  'Grocery',
+  'Footwear',
+  'Bags',
+  'Jewellery',
+  'Skincare',
+  'Hair Care',
+  'Furniture',
+  'Office Supplies',
+  'Pet Supplies',
+  'Baby Products',
+  'Automotive'
+]
+
 const CAT_META = {
-  All:{'icon':'🛍️','color':'#2563eb'}, Beauty:{'icon':'💄','color':'#e11d48'},
-  Headphones:{'icon':'🎧','color':'#7c3aed'}, Electronics:{'icon':'⚡','color':'#0284c7'},
-  Fashion:{'icon':'👗','color':'#ea580c'}, Kitchen:{'icon':'🍳','color':'#b45309'},
-  Fitness:{'icon':'💪','color':'#059669'}, Books:{'icon':'📚','color':'#6d28d9'},
-  'Home Decor':{'icon':'🏠','color':'#0f766e'},
+  All:               { icon:'🛍️', color:'#2563eb' },
+  Beauty:            { icon:'💄', color:'#e11d48' },
+  Electronics:       { icon:'⚡', color:'#0284c7' },
+  Fashion:           { icon:'👗', color:'#ea580c' },
+  'Home & Kitchen':  { icon:'🍳', color:'#b45309' },
+  Mobiles:           { icon:'📱', color:'#0ea5e9' },
+  Laptops:           { icon:'💻', color:'#4f46e5' },
+  Headphones:        { icon:'🎧', color:'#7c3aed' },
+  'Smart Watches':   { icon:'⌚', color:'#0891b2' },
+  Fitness:           { icon:'💪', color:'#059669' },
+  Books:             { icon:'📚', color:'#6d28d9' },
+  'Home Decor':      { icon:'🏠', color:'#0f766e' },
+  Gaming:            { icon:'🎮', color:'#9333ea' },
+  Toys:              { icon:'🧸', color:'#f43f5e' },
+  Grocery:           { icon:'🛒', color:'#16a34a' },
+  Footwear:          { icon:'👟', color:'#ea580c' },
+  Bags:              { icon:'👜', color:'#c2410c' },
+  Jewellery:         { icon:'💍', color:'#ca8a04' },
+  Skincare:          { icon:'🧴', color:'#db2777' },
+  'Hair Care':       { icon:'💇', color:'#be123c' },
+  Furniture:         { icon:'🛋️', color:'#78716c' },
+  'Office Supplies': { icon:'📎', color:'#475569' },
+  'Pet Supplies':    { icon:'🐶', color:'#0d9488' },
+  'Baby Products':   { icon:'🍼', color:'#ec4899' },
+  Automotive:        { icon:'🚗', color:'#dc2626' },
 }
 
 function PrivacyModal({ onClose }) {
@@ -290,7 +337,18 @@ export default function Home() {
           </div>
           <div style={s.footerBottom}>
             <p style={{color:'var(--text3)',fontSize:'11px'}}>© {new Date().getFullYear()} PrimeOffers. All rights reserved.</p>
-            <p style={{color:'var(--text4)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
+    {/* Website Owners */}
+    <div style={s.ownerWrap}>
+      <span style={s.ownerLabel}>Founded by</span>
+
+      <div style={s.ownerNames}>
+        <span style={s.ownerCard}>RoseMary Katikala</span>
+        <span style={s.ownerDivider}>•</span>
+        <span style={s.ownerCard}>Aaron Elijah Tully</span>
+      </div>
+    </div>
+
+            <p style={{color:'var(--text3)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
               Contains affiliate links. We may earn a commission on purchases.
             </p>
           </div>
@@ -343,6 +401,41 @@ const s = {
   footerLinks:{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'},
   footerLink:{display:'flex',alignItems:'center',gap:'4px',background:'none',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',border:'none',padding:0,transition:'color .15s'},
   footerBottom:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'},
+  ownerWrap:{
+  display:'flex',
+  alignItems:'center',
+  gap:'10px',
+  flexWrap:'wrap',
+  marginTop:'2px',
+},
+
+ownerLabel:{
+  color:'var(--text3)',
+  fontSize:'11px',
+  fontWeight:500,
+  letterSpacing:'0.3px',
+  textTransform:'uppercase',
+},
+
+ownerNames:{
+  display:'flex',
+  alignItems:'center',
+  gap:'8px',
+  flexWrap:'wrap',
+},
+
+ownerCard:{
+
+  padding:'5px 10px',
+  borderRadius:'999px',
+  fontSize:'11px',
+  color:'var(--text3)',
+},
+
+ownerDivider:{
+  color:'var(--text4)',
+  fontSize:'12px',
+},
 }
 
 const ps = {

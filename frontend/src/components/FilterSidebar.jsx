@@ -1,10 +1,89 @@
 import { SlidersHorizontal, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
-const CATS      = ['All','Beauty','Headphones','Electronics','Fashion','Kitchen','Fitness','Books','Home Decor']
-const CAT_ICON  = {All:'🛍️',Beauty:'💄',Headphones:'🎧',Electronics:'⚡',Fashion:'👗',Kitchen:'🍳',Fitness:'💪',Books:'📚','Home Decor':'🏠'}
-const CAT_COLOR = {All:'#2563eb',Beauty:'#e11d48',Headphones:'#7c3aed',Electronics:'#0284c7',Fashion:'#ea580c',Kitchen:'#b45309',Fitness:'#059669',Books:'#6d28d9','Home Decor':'#0f766e'}
+const CATS = [
+  'All',
+  'Beauty',
+  'Electronics',
+  'Fashion',
+  'Home & Kitchen',
+  'Mobiles',
+  'Laptops',
+  'Headphones',
+  'Smart Watches',
+  'Fitness',
+  'Books',
+  'Home Decor',
+  'Gaming',
+  'Toys',
+  'Grocery',
+  'Footwear',
+  'Bags',
+  'Jewellery',
+  'Skincare',
+  'Hair Care',
+  'Furniture',
+  'Office Supplies',
+  'Pet Supplies',
+  'Baby Products',
+  'Automotive'
+]
 
+const CAT_ICON = {
+  All:'🛍️',
+  Beauty:'💄',
+  Electronics:'⚡',
+  Fashion:'👗',
+  'Home & Kitchen':'🍳',
+  Mobiles:'📱',
+  Laptops:'💻',
+  Headphones:'🎧',
+  'Smart Watches':'⌚',
+  Fitness:'💪',
+  Books:'📚',
+  'Home Decor':'🏠',
+  Gaming:'🎮',
+  Toys:'🧸',
+  Grocery:'🛒',
+  Footwear:'👟',
+  Bags:'👜',
+  Jewellery:'💍',
+  Skincare:'🧴',
+  'Hair Care':'💇',
+  Furniture:'🛋️',
+  'Office Supplies':'📎',
+  'Pet Supplies':'🐶',
+  'Baby Products':'🍼',
+  Automotive:'🚗'
+}
+
+const CAT_COLOR = {
+  All:'#2563eb',
+  Beauty:'#e11d48',
+  Electronics:'#0284c7',
+  Fashion:'#ea580c',
+  'Home & Kitchen':'#b45309',
+  Mobiles:'#0ea5e9',
+  Laptops:'#4f46e5',
+  Headphones:'#7c3aed',
+  'Smart Watches':'#0891b2',
+  Fitness:'#059669',
+  Books:'#6d28d9',
+  'Home Decor':'#0f766e',
+  Gaming:'#9333ea',
+  Toys:'#f43f5e',
+  Grocery:'#16a34a',
+  Footwear:'#ea580c',
+  Bags:'#c2410c',
+  Jewellery:'#ca8a04',
+  Skincare:'#db2777',
+  'Hair Care':'#be123c',
+  Furniture:'#78716c',
+  'Office Supplies':'#475569',
+  'Pet Supplies':'#0d9488',
+  'Baby Products':'#ec4899',
+  Automotive:'#dc2626'
+}
 function useIsMobile(bp = 900) {
   const [v, setV] = useState(() => typeof window !== 'undefined' ? window.innerWidth < bp : false)
   useEffect(() => {
