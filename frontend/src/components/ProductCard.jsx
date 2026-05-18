@@ -97,7 +97,7 @@ export default function ProductCard({ product, index = 0 }) {
           }}
         >
           <ShoppingCart size={14} strokeWidth={2.2}/>
-          <span>Buy on Amazon</span>
+          <span>View Product</span>
           <ExternalLink size={11} strokeWidth={2.5} style={{marginLeft:'2px'}}/>
         </a>
       </div>
