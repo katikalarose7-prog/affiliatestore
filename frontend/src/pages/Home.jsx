@@ -106,8 +106,6 @@ export default function Home() {
         .buy-now-link:hover{opacity:0.88;transform:translateY(-1px)}
         @media(max-width:900px){
           .layout-row{flex-direction:column!important}
-          .filter-sidebar-wrap{display:none}
-          .filter-sidebar-wrap.open{display:block!important}
           .product-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))!important}
           .featured-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))!important}
           .hero-title{font-size:clamp(28px,7vw,52px)!important}
@@ -233,16 +231,13 @@ export default function Home() {
         </div>
 
         <div className="layout-row" style={s.layout}>
-          {/* Sidebar */}
-          <div className={`filter-sidebar-wrap${showSidebar?' open':''}`}
-            style={{flexShrink:0}}>
-            <FilterSidebar
-              filters={filters} onChange={setFilters}
-              onClear={clearAll}
-              visible={showSidebar}
-              onClose={() => setShowSidebar(false)}
-            />
-          </div>
+          {/* Sidebar — handles its own mobile/desktop rendering */}
+          <FilterSidebar
+            filters={filters} onChange={setFilters}
+            onClear={clearAll}
+            visible={showSidebar}
+            onClose={() => setShowSidebar(false)}
+          />
 
           {/* Grid */}
           <div style={{flex:1,minWidth:0}}>
@@ -295,7 +290,7 @@ export default function Home() {
           </div>
           <div style={s.footerBottom}>
             <p style={{color:'var(--text3)',fontSize:'11px'}}>© {new Date().getFullYear()} PrimeOffers. All rights reserved.</p>
-            <p style={{color:'var(--text3)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
+            <p style={{color:'var(--text4)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
               Contains affiliate links. We may earn a commission on purchases.
             </p>
           </div>
@@ -318,7 +313,7 @@ const s = {
   ctxLeft:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'},
   countPill:{background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',color:'var(--accent)',padding:'2px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600},
   clearBtn:{background:'none',color:'var(--hot)',border:'1px solid rgba(239,68,68,0.28)',borderRadius:'7px',padding:'4px 11px',fontSize:'11px',fontWeight:600,cursor:'pointer'},
-  hero:{position:'relative',overflow:'hidden',padding:'clamp(25px,8vw,40px) 0 clamp(36px,6vw,18px)',borderBottom:'1px solid var(--border)',background:'linear-gradient(180deg,var(--accent-bg) 0%,var(--bg) 100%)'},
+  hero:{position:'relative',overflow:'hidden',padding:'clamp(48px,8vw,88px) 0 clamp(36px,6vw,68px)',borderBottom:'1px solid var(--border)',background:'linear-gradient(180deg,var(--accent-bg) 0%,var(--bg) 100%)'},
   heroGlow:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'600px',height:'280px',background:'radial-gradient(ellipse,rgba(37,99,235,0.12) 0%,transparent 70%)',pointerEvents:'none'},
   heroGlow2:{position:'absolute',top:'20%',right:'-5%',width:'300px',height:'300px',borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,0.07) 0%,transparent 70%)',pointerEvents:'none'},
   heroContent:{position:'relative',zIndex:1,textAlign:'center',maxWidth:'640px',margin:'0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:'clamp(12px,2vw,18px)'},
