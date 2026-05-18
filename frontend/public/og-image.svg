@@ -1,0 +1,92 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logograd" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="titlegrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="60%" stop-color="#a5b4fc"/>
+      <stop offset="100%" stop-color="#f0abfc"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0f1629"/>
+
+  <!-- Glow orbs -->
+  <ellipse cx="300" cy="200" rx="280" ry="220" fill="#2563eb" opacity="0.12"/>
+  <ellipse cx="900" cy="430" rx="240" ry="200" fill="#6366f1" opacity="0.10"/>
+  <ellipse cx="1100" cy="80" rx="180" ry="150" fill="#3b82f6" opacity="0.08"/>
+
+  <!-- Left accent bar -->
+  <rect x="72" y="72" width="4" height="486" rx="2" fill="#2563eb" opacity="0.6"/>
+
+  <!-- Logo icon -->
+  <rect x="100" y="88" width="56" height="56" rx="14" fill="#2563eb"/>
+  <text x="128" y="127" font-size="28" text-anchor="middle" dominant-baseline="middle">&#x1F6CD;&#xFE0F;</text>
+
+  <!-- Brand name -->
+  <text x="172" y="110" font-family="Arial Black, sans-serif" font-size="34" font-weight="900" fill="#ffffff" letter-spacing="-0.5">Deal</text>
+  <text x="248" y="110" font-family="Arial Black, sans-serif" font-size="34" font-weight="900" fill="#60a5fa" letter-spacing="-0.5">Nest</text>
+  <text x="172" y="136" font-family="Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" letter-spacing="2">AFFILIATE STORE</text>
+
+  <!-- Main headline -->
+  <text x="100" y="232" font-family="Arial Black, sans-serif" font-size="68" font-weight="900" fill="#ffffff" letter-spacing="-2">Discover Products</text>
+  <text x="100" y="314" font-family="Arial Black, sans-serif" font-size="68" font-weight="900" fill="url(#titlegrad)" letter-spacing="-2">You&apos;ll Love</text>
+
+  <!-- Subtext -->
+  <text x="100" y="374" font-family="Arial, sans-serif" font-size="22" fill="#94a3b8">Handpicked deals on Beauty &#xB7; Electronics &#xB7; Fashion &#xB7; More</text>
+
+  <!-- Category pills -->
+  <rect x="100" y="410" width="106" height="34" rx="17" fill="#1e3a5f"/>
+  <text x="153" y="433" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#93c5fd" text-anchor="middle">&#x1F484; Beauty</text>
+  <rect x="216" y="410" width="140" height="34" rx="17" fill="#1e1b4b"/>
+  <text x="286" y="433" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#a5b4fc" text-anchor="middle">&#x26A1; Electronics</text>
+  <rect x="366" y="410" width="120" height="34" rx="17" fill="#1a2744"/>
+  <text x="426" y="433" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#7dd3fc" text-anchor="middle">&#x1F457; Fashion</text>
+  <rect x="496" y="410" width="114" height="34" rx="17" fill="#1e2a1a"/>
+  <text x="553" y="433" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#86efac" text-anchor="middle">&#x1F4AA; Fitness</text>
+  <rect x="620" y="410" width="106" height="34" rx="17" fill="#2a1a1a"/>
+  <text x="673" y="433" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#fca5a5" text-anchor="middle">&#x1F373; Kitchen</text>
+
+  <!-- Divider -->
+  <line x1="100" y1="488" x2="740" y2="488" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- Bottom URL -->
+  <text x="100" y="518" font-family="Arial, sans-serif" font-size="15" fill="#475569">affiliatestore.primeoffers.workers.dev</text>
+
+  <!-- Trust badges -->
+  <rect x="100" y="538" width="110" height="26" rx="13" fill="#162036"/>
+  <text x="155" y="556" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#60a5fa" text-anchor="middle">&#x2605; Top Rated</text>
+  <rect x="220" y="538" width="130" height="26" rx="13" fill="#1a1230"/>
+  <text x="285" y="556" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#a78bfa" text-anchor="middle">&#x1F525; Best Sellers</text>
+  <rect x="360" y="538" width="142" height="26" rx="13" fill="#1a2218"/>
+  <text x="431" y="556" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#6ee7b7" text-anchor="middle">&#x2713; Verified Deals</text>
+
+  <!-- Right product cards -->
+  <rect x="820" y="72" width="180" height="230" rx="16" fill="#111827" stroke="#1e3a5f" stroke-width="1.5"/>
+  <rect x="830" y="82" width="160" height="110" rx="10" fill="#1e3a5f"/>
+  <text x="910" y="145" font-size="44" text-anchor="middle" dominant-baseline="middle">&#x1F3A7;</text>
+  <rect x="840" y="204" width="100" height="10" rx="5" fill="#1e293b"/>
+  <rect x="840" y="220" width="70" height="8" rx="4" fill="#1e293b"/>
+  <rect x="840" y="238" width="120" height="28" rx="8" fill="#2563eb"/>
+  <text x="900" y="258" font-family="Arial, sans-serif" font-size="12" fill="#ffffff" text-anchor="middle" font-weight="700">Buy on Amazon</text>
+  <rect x="830" y="88" width="72" height="20" rx="10" fill="#f59e0b"/>
+  <text x="866" y="103" font-family="Arial, sans-serif" font-size="10" fill="#78350f" text-anchor="middle" font-weight="700">&#x2605; Featured</text>
+
+  <rect x="1016" y="110" width="165" height="220" rx="16" fill="#111827" stroke="#1e1b4b" stroke-width="1.5"/>
+  <rect x="1026" y="120" width="145" height="100" rx="10" fill="#1e1b4b"/>
+  <text x="1098" y="175" font-size="40" text-anchor="middle" dominant-baseline="middle">&#x1F484;</text>
+  <rect x="1030" y="230" width="88" height="10" rx="5" fill="#1e293b"/>
+  <rect x="1030" y="246" width="64" height="8" rx="4" fill="#1e293b"/>
+  <rect x="1030" y="260" width="110" height="26" rx="8" fill="#6366f1"/>
+  <text x="1085" y="278" font-family="Arial, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">Buy on Amazon</text>
+
+  <rect x="840" y="320" width="155" height="200" rx="16" fill="#111827" stroke="#162a1e" stroke-width="1.5"/>
+  <rect x="850" y="330" width="135" height="90" rx="10" fill="#162a1e"/>
+  <text x="917" y="378" font-size="36" text-anchor="middle" dominant-baseline="middle">&#x1F4DA;</text>
+  <rect x="854" y="432" width="88" height="9" rx="4" fill="#1e293b"/>
+  <rect x="854" y="447" width="108" height="24" rx="8" fill="#059669"/>
+  <text x="908" y="464" font-family="Arial, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">Buy on Amazon</text>
+</svg>
