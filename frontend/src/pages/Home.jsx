@@ -215,7 +215,7 @@ export default function Home() {
           <div style={s.heroGlow}/>
           <div style={s.heroGlow2}/>
           <div className="container" style={s.heroContent}>
-            <div style={s.heroBadge}><Zap size={11}/> Best Amazon Affiliate Deals</div>
+            <div style={s.heroBadge}><Zap size={11}/> Best Prime Affiliate Deals</div>
             <h1 className="hero-title" style={s.heroTitle}>
               Discover Products<br/>
               <span style={s.heroSpan}>You'll Actually Love</span>

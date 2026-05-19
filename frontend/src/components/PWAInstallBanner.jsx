@@ -1,55 +1,48 @@
 import { useState, useEffect } from 'react'
-import { Download, X, Smartphone } from 'lucide-react'
+import { Download, X, Smartphone, Share } from 'lucide-react'
 
-/**
- * PWAInstallBanner
- * Shows a native-style "Add to Home Screen" prompt.
- * - On Chrome/Android: uses the beforeinstallprompt event
- * - On iOS Safari: shows manual instructions
- * - Remembers dismissal for 7 days
- */
 export default function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
-  const [showBanner, setShowBanner]         = useState(false)
-  const [showIOSHint, setShowIOSHint]       = useState(false)
+  const [showAndroid, setShowAndroid]       = useState(false)
+  const [showIOS, setShowIOS]               = useState(false)
   const [installing, setInstalling]         = useState(false)
+  const [installed, setInstalled]           = useState(false)
 
-  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
-  const isInStandaloneMode = () =>
+  const isIOS = () =>
+    /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window.MSStream)
+
+  const isAndroid = () =>
+    /android/i.test(navigator.userAgent)
+
+  const isStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true
 
-  const isDismissedRecently = () => {
-    const d = localStorage.getItem('pwa_dismissed_at')
-    if (!d) return false
-    return Date.now() - parseInt(d) < 7 * 24 * 60 * 60 * 1000 // 7 days
+  const wasDismissed = () => {
+    const t = localStorage.getItem('pwa_dismissed')
+    return t && Date.now() - parseInt(t) < 7 * 24 * 60 * 60 * 1000
   }
 
   useEffect(() => {
-    // Already installed as PWA — don't show
-    if (isInStandaloneMode()) return
-    // User dismissed recently — don't show
-    if (isDismissedRecently()) return
+    if (isStandalone() || wasDismissed()) return
 
-    // Chrome/Android/Desktop: intercept install prompt
+    // Android / Chrome Desktop — native install prompt
     const handler = e => {
       e.preventDefault()
       setDeferredPrompt(e)
-      // Show banner after 3 seconds delay (not immediately on load)
-      setTimeout(() => setShowBanner(true), 3000)
+      setTimeout(() => setShowAndroid(true), 3500)
     }
     window.addEventListener('beforeinstallprompt', handler)
-
-    // iOS Safari: show manual hint (no API available)
-    if (isIOS() && !isInStandaloneMode()) {
-      setTimeout(() => setShowIOSHint(true), 4000)
-    }
-
-    // Hide banner when installed
     window.addEventListener('appinstalled', () => {
-      setShowBanner(false)
-      setDeferredPrompt(null)
+      setShowAndroid(false)
+      setInstalled(true)
+      setTimeout(() => setInstalled(false), 4000)
     })
+
+    // iOS Safari — no API, show manual steps
+    if (isIOS()) {
+      setTimeout(() => setShowIOS(true), 3500)
+    }
 
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
@@ -60,61 +53,137 @@ export default function PWAInstallBanner() {
     try {
       deferredPrompt.prompt()
       const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') setShowBanner(false)
+      if (outcome === 'accepted') setShowAndroid(false)
     } finally {
       setInstalling(false)
       setDeferredPrompt(null)
     }
   }
 
-  const handleDismiss = () => {
-    setShowBanner(false)
-    setShowIOSHint(false)
-    localStorage.setItem('pwa_dismissed_at', Date.now().toString())
+  const dismiss = () => {
+    setShowAndroid(false)
+    setShowIOS(false)
+    localStorage.setItem('pwa_dismissed', Date.now().toString())
   }
 
-  // Chrome/Android install banner
-  if (showBanner) {
+  /* ── Installed success toast ── */
+  if (installed) {
     return (
-      <div style={s.banner} role="banner" aria-label="Install app">
-        <div style={s.bannerLeft}>
+      <div style={s.toast}>
+        <span style={{fontSize:'20px'}}>🎉</span>
+        <span style={{fontWeight:600, fontSize:'14px', color:'var(--text)'}}>
+          PrimeOffers installed successfully!
+        </span>
+      </div>
+    )
+  }
+
+  /* ── Android / Chrome native prompt ── */
+  if (showAndroid) {
+    return (
+      <div style={s.banner}>
+        <div style={s.left}>
           <div style={s.appIcon}>🛍️</div>
           <div>
-            <div style={s.bannerTitle}>Install DealNest</div>
-            <div style={s.bannerSub}>Add to home screen for quick access</div>
+            <div style={s.bannerTitle}>Install PrimeOffers</div>
+            <div style={s.bannerSub}>Add to home screen for instant access</div>
           </div>
         </div>
-        <div style={s.bannerRight}>
+        <div style={s.right}>
           <button onClick={handleInstall} disabled={installing} style={s.installBtn}>
-            {installing ? '…' : (
-              <><Download size={13} strokeWidth={2.5}/> Install</>
-            )}
+            {installing
+              ? <span style={{fontSize:'13px'}}>Installing…</span>
+              : <><Download size={13} strokeWidth={2.5}/> Install</>
+            }
           </button>
-          <button onClick={handleDismiss} style={s.dismissBtn} aria-label="Dismiss">
-            <X size={14}/>
-          </button>
+          <button onClick={dismiss} style={s.dismissBtn}><X size={14}/></button>
         </div>
       </div>
     )
   }
 
-  // iOS Safari hint
-  if (showIOSHint) {
+  /* ── iOS Safari — step-by-step instructions ── */
+  if (showIOS) {
     return (
-      <div style={{...s.banner, flexDirection:'column', gap:'10px', alignItems:'flex-start'}} role="banner">
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%'}}>
-          <div style={s.bannerLeft}>
-            <Smartphone size={20} color="var(--accent)"/>
-            <div style={s.bannerTitle}>Add to Home Screen</div>
+      <div style={s.iosBanner}>
+        {/* Header */}
+        <div style={s.iosHead}>
+          <div style={s.left}>
+            <div style={s.appIcon}>🛍️</div>
+            <div>
+              <div style={s.bannerTitle}>Install PrimeOffers</div>
+              <div style={s.bannerSub}>Use as an app on your iPhone</div>
+            </div>
           </div>
-          <button onClick={handleDismiss} style={s.dismissBtn} aria-label="Dismiss">
-            <X size={14}/>
-          </button>
+          <button onClick={dismiss} style={s.dismissBtn}><X size={14}/></button>
         </div>
-        <p style={s.iosHint}>
-          Tap <strong>Share</strong> <span style={{fontSize:'15px'}}>⎙</span> at the bottom of your browser,
-          then tap <strong>"Add to Home Screen"</strong> to install DealNest as an app.
-        </p>
+
+        {/* Steps */}
+        <div style={s.steps}>
+          {/* Step 1 */}
+          <div style={s.step}>
+            <div style={s.stepNum}>1</div>
+            <div style={s.stepText}>
+              Tap the{' '}
+              <span style={s.highlight}>Share</span>
+              {' '}button at the{' '}
+              <span style={s.highlight}>bottom</span>
+              {' '}of your Safari browser
+            </div>
+            {/* Share icon illustration */}
+            <div style={s.iconBox}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={s.stepDivider}/>
+
+          {/* Step 2 */}
+          <div style={s.step}>
+            <div style={s.stepNum}>2</div>
+            <div style={s.stepText}>
+              Scroll down in the Share menu and tap{' '}
+              <span style={s.highlight}>"Add to Home Screen"</span>
+            </div>
+            {/* Add to home screen icon */}
+            <div style={s.iconBox}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8"  y1="12" x2="16" y2="12"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={s.stepDivider}/>
+
+          {/* Step 3 */}
+          <div style={s.step}>
+            <div style={s.stepNum}>3</div>
+            <div style={s.stepText}>
+              Tap{' '}
+              <span style={s.highlight}>"Add"</span>
+              {' '}in the top right corner — PrimeOffers will appear on your home screen!
+            </div>
+            {/* Check icon */}
+            <div style={{...s.iconBox, background:'rgba(16,185,129,0.12)'}}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Arrow pointing down to Safari toolbar */}
+        <div style={s.iosArrow}>
+          ↓ Look for the Share icon in the Safari toolbar below
+        </div>
       </div>
     )
   }
@@ -123,62 +192,116 @@ export default function PWAInstallBanner() {
 }
 
 const s = {
+  /* Android banner */
   banner: {
-    position: 'fixed',
-    bottom: '16px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 150,
-    width: 'calc(100% - 32px)',
-    maxWidth: '460px',
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border)',
-    borderRadius: '14px',
-    padding: '14px 16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '12px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1)',
-    animation: 'fadeUp 0.4s cubic-bezier(.22,1,.36,1)',
+    position:'fixed', bottom:'16px', left:'50%',
+    transform:'translateX(-50%)',
+    zIndex:999,
+    width:'calc(100% - 32px)', maxWidth:'460px',
+    background:'var(--card-bg)',
+    border:'1px solid var(--border)',
+    borderRadius:'14px', padding:'14px 16px',
+    display:'flex', alignItems:'center',
+    justifyContent:'space-between', gap:'12px',
+    boxShadow:'0 8px 32px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.12)',
+    animation:'fadeUp 0.4s cubic-bezier(.22,1,.36,1)',
   },
-  bannerLeft: {
-    display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0,
+
+  /* iOS full-card banner */
+  iosBanner: {
+    position:'fixed', bottom:'16px', left:'50%',
+    transform:'translateX(-50%)',
+    zIndex:999,
+    width:'calc(100% - 32px)', maxWidth:'400px',
+    background:'var(--card-bg)',
+    border:'1px solid var(--border)',
+    borderRadius:'16px', padding:'16px',
+    boxShadow:'0 8px 32px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.12)',
+    animation:'fadeUp 0.4s cubic-bezier(.22,1,.36,1)',
+    display:'flex', flexDirection:'column', gap:'14px',
   },
+  iosHead: {
+    display:'flex', alignItems:'center',
+    justifyContent:'space-between', gap:'10px',
+  },
+
+  /* Steps */
+  steps: {
+    display:'flex', flexDirection:'column', gap:'0',
+    background:'var(--bg2)',
+    borderRadius:'10px', overflow:'hidden',
+    border:'1px solid var(--border)',
+  },
+  step: {
+    display:'flex', alignItems:'center', gap:'12px',
+    padding:'12px 14px',
+  },
+  stepNum: {
+    width:'24px', height:'24px', borderRadius:'50%',
+    background:'linear-gradient(135deg,#2563eb,#6366f1)',
+    color:'#fff', fontSize:'12px', fontWeight:700,
+    display:'flex', alignItems:'center', justifyContent:'center',
+    flexShrink:0,
+  },
+  stepText: {
+    flex:1, fontSize:'13px', color:'var(--text2)', lineHeight:1.45,
+  },
+  stepDivider: {
+    height:'1px', background:'var(--border)', margin:'0 14px',
+  },
+  iconBox: {
+    width:'44px', height:'44px', borderRadius:'10px',
+    background:'rgba(37,99,235,0.1)',
+    display:'flex', alignItems:'center', justifyContent:'center',
+    flexShrink:0,
+  },
+  highlight: {
+    color:'var(--accent)', fontWeight:600,
+  },
+  iosArrow: {
+    textAlign:'center', fontSize:'11px',
+    color:'var(--text3)', letterSpacing:'0.3px',
+  },
+
+  /* Shared */
+  left:  {display:'flex', alignItems:'center', gap:'12px', flex:1, minWidth:0},
+  right: {display:'flex', alignItems:'center', gap:'8px', flexShrink:0},
   appIcon: {
-    width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-    background: 'linear-gradient(135deg, #2563eb, #6366f1)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '20px',
-    boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+    width:'42px', height:'42px', borderRadius:'10px',
+    background:'linear-gradient(135deg,#2563eb,#6366f1)',
+    display:'flex', alignItems:'center', justifyContent:'center',
+    fontSize:'22px', flexShrink:0,
+    boxShadow:'0 2px 8px rgba(37,99,235,0.3)',
   },
   bannerTitle: {
-    fontFamily: 'var(--font-head)', fontWeight: 700,
-    fontSize: '14px', color: 'var(--text)',
+    fontFamily:'var(--font-head)', fontWeight:700,
+    fontSize:'14px', color:'var(--text)',
   },
-  bannerSub: {
-    fontSize: '12px', color: 'var(--text2)', marginTop: '1px',
-  },
-  bannerRight: {
-    display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
-  },
+  bannerSub: {fontSize:'12px', color:'var(--text2)', marginTop:'1px'},
   installBtn: {
-    display: 'flex', alignItems: 'center', gap: '5px',
-    background: 'linear-gradient(135deg, #2563eb, #6366f1)',
-    color: '#fff', border: 'none', borderRadius: '8px',
-    padding: '7px 14px', fontSize: '13px', fontWeight: 600,
-    cursor: 'pointer', whiteSpace: 'nowrap',
-    boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+    display:'flex', alignItems:'center', gap:'5px',
+    background:'linear-gradient(135deg,#2563eb,#6366f1)',
+    color:'#fff', border:'none', borderRadius:'8px',
+    padding:'7px 14px', fontSize:'13px', fontWeight:600,
+    cursor:'pointer', whiteSpace:'nowrap',
+    boxShadow:'0 2px 8px rgba(37,99,235,0.3)',
   },
   dismissBtn: {
-    background: 'var(--bg2)', border: '1px solid var(--border)',
-    borderRadius: '7px', padding: '6px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', color: 'var(--text3)',
-    flexShrink: 0,
+    background:'var(--bg2)', border:'1px solid var(--border)',
+    borderRadius:'7px', padding:'6px',
+    display:'flex', alignItems:'center', justifyContent:'center',
+    cursor:'pointer', color:'var(--text3)', flexShrink:0,
   },
-  iosHint: {
-    fontSize: '13px', color: 'var(--text2)',
-    lineHeight: 1.55, paddingLeft: '4px',
+  toast: {
+    position:'fixed', bottom:'20px', left:'50%',
+    transform:'translateX(-50%)',
+    zIndex:999,
+    background:'var(--card-bg)',
+    border:'1px solid var(--border)',
+    borderRadius:'12px', padding:'12px 20px',
+    display:'flex', alignItems:'center', gap:'10px',
+    boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
+    animation:'fadeUp 0.3s cubic-bezier(.22,1,.36,1)',
+    whiteSpace:'nowrap',
   },
 }
