@@ -75,6 +75,10 @@ export default function Admin() {
   const [deleteBannerId, setDeleteBannerId] = useState(null)
   const bannerFileRef = useRef()
 
+  //csv
+  const [importMode, setImportMode] = useState('upsert')
+const csvRef = useRef()
+
   const hdrs = { Authorization: `Bearer ${token}` }
 
   const fetchProducts = async () => {
@@ -162,6 +166,48 @@ export default function Admin() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.category.toLowerCase().includes(search.toLowerCase())
   )
+
+//csv
+const handleCsvImport = async e => {
+
+  const file = e.target.files[0]
+
+  if (!file) return
+
+  const fd = new FormData()
+
+  fd.append('file', file)
+  fd.append('mode', importMode)
+
+  try {
+
+    const { data } = await axios.post(
+      `${API}/products/import`,
+      fd,
+      {
+        headers: {
+          ...hdrs,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+
+    toast.success(
+      `Created: ${data.created}, Updated: ${data.updated}, Skipped: ${data.skipped}`
+    )
+
+    fetchProducts()
+
+  } catch (err) {
+
+    toast.error(
+      err.response?.data?.message || 'Import failed'
+    )
+  }
+
+  e.target.value = ''
+}
+
   const stats = [
     { icon:<Package size={17}/>, label:'Products', value:products.length,                                                                  color:'#2563eb' },
     { icon:<Star    size={17}/>, label:'Featured', value:products.filter(p=>p.featured).length,                                           color:'#f59e0b' },
@@ -246,8 +292,43 @@ export default function Admin() {
                 <h1 style={s.pageTitle}>Products</h1>
                 <p style={s.pageSub}>Manage your affiliate product catalog</p>
               </div>
-              <button onClick={openAdd} style={s.addBtn}><Plus size={14}/> Add Product</button>
-            </div>
+<div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+
+  <select
+    value={importMode}
+    onChange={e => setImportMode(e.target.value)}
+    style={{
+      ...s.searchInput,
+      width:'220px',
+      minHeight:'38px'
+    }}
+  >
+    <option value="upsert">
+      Add + Update Existing
+    </option>
+
+    <option value="new">
+      Add New Only
+    </option>
+
+    <option value="update">
+      Update Existing Only
+    </option>
+  </select>
+
+  <button
+    onClick={() => csvRef.current.click()}
+    style={s.secondaryBtn}
+  >
+    <Upload size={14}/>
+    Upload CSV
+  </button>
+
+  <button onClick={openAdd} style={s.addBtn}>
+    <Plus size={14}/> Add Product
+  </button>
+
+</div>            </div>
 
             <div className="stats-grid" style={s.statsGrid}>
               {stats.map(st => (
@@ -312,7 +393,13 @@ export default function Admin() {
             </div>
           </div>
         )}
-
+<input
+  ref={csvRef}
+  type="file"
+  accept=".csv"
+  style={{ display:'none' }}
+  onChange={handleCsvImport}
+/>
         {/* ════ BANNERS ════ */}
         {activeTab === 'banners' && (
           <div>
@@ -589,4 +676,18 @@ const s = {
   modalFoot:{display:'flex',justifyContent:'flex-end',gap:'8px',borderTop:'1px solid var(--border)',paddingTop:'16px'},
   cancelBtn:{display:'flex',alignItems:'center',gap:'4px',padding:'8px 18px',borderRadius:'7px',background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--text)',fontSize:'13px',cursor:'pointer'},
   saveBtn:{display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',padding:'8px 22px',borderRadius:'7px',background:'linear-gradient(135deg,#2563eb,#6366f1)',color:'#fff',fontSize:'13px',fontWeight:600,boxShadow:'0 3px 10px rgba(37,99,235,0.28)',minWidth:'120px',cursor:'pointer',border:'none'},
+  secondaryBtn:{
+  display:'flex',
+  alignItems:'center',
+  gap:'6px',
+  padding:'9px 16px',
+  borderRadius:'8px',
+  background:'var(--bg2)',
+  border:'1px solid var(--border)',
+  color:'var(--text)',
+  fontWeight:600,
+  fontSize:'13px',
+  cursor:'pointer',
+  minHeight:'38px'
+},
 }
