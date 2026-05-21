@@ -100,7 +100,13 @@ const csvRef = useRef()
   const openEdit = p  => {
     setEditing(p)
     setForm({ name:p.name, description:p.description, price:String(p.price), category:p.category, affiliateLink:p.affiliateLink, rating:String(p.rating), featured:p.featured })
-    setImgFile(null); setImgPrev(p.image ? `${STATIC}${p.image}` : ''); setModal(true)
+    setImgFile(null); setImgPrev(
+  p.image
+    ? p.image.startsWith('http')
+      ? p.image
+      : `${STATIC}${p.image}`
+    : ''
+); setModal(true)
   }
   const closeModal  = () => { setModal(false); setEditing(null); setImgFile(null); setImgPrev('') }
   const handleImage = e => {
@@ -368,7 +374,15 @@ const handleCsvImport = async e => {
                         <td style={s.td}>
                           <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                             <div style={s.thumb}>
-                              {p.image ? <img src={`${STATIC}${p.image}`} alt={p.name} style={s.thumbImg}/> : <ImageIcon size={14} color="var(--text3)"/>}
+                              {p.image ? <img
+  src={
+    p.image?.startsWith('http')
+      ? p.image
+      : `${STATIC}${p.image}`
+  }
+  alt={p.name}
+  style={s.thumbImg}
+/> : <ImageIcon size={14} color="var(--text3)"/>}
                             </div>
                             <div style={{minWidth:0}}>
                               <div style={{fontWeight:500,fontSize:'13px',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'180px'}}>{p.name}</div>

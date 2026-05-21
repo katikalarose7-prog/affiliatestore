@@ -44,7 +44,31 @@ router.get('/', async (req, res) => {
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
     if (minRating) filter.rating = { $gte: parseFloat(minRating) };
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    //if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) {
+  const keywords = search.trim().split(/\s+/)
+
+  filter.$or = [
+    {
+      name: {
+        $regex: keywords.join('|'),
+        $options: 'i'
+      }
+    },
+    {
+      description: {
+        $regex: keywords.join('|'),
+        $options: 'i'
+      }
+    },
+    {
+      category: {
+        $regex: keywords.join('|'),
+        $options: 'i'
+      }
+    }
+  ]
+}
 
     const products = await Product.find(filter).sort({ createdAt: -1 });
     res.json(products);

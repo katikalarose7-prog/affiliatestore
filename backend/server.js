@@ -40,6 +40,9 @@ const corsOptions = {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
+//csv
+app.use('/api/products', require('./routes/productImport'))
+
 // ─── Security Headers (Helmet) ─────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
