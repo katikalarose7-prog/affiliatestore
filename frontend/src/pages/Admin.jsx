@@ -376,7 +376,7 @@ const handleCsvImport = async e => {
  src={
   p.image?.startsWith('http')
     ? p.image
-    : `${API_URL}${p.image}`
+    : `${STATIC}${p.image}`
 }
   alt={p.name}
   style={s.thumbImg}
@@ -437,7 +437,7 @@ const handleCsvImport = async e => {
 {b.image ? <img src={
   b.image?.startsWith('http')
     ? b.image
-    : `${API_URL}${b.image}`
+    : `${STATIC}${b.image}`
 } alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}                    <div style={{flex:1,minWidth:0}}>
                       {b.badge && <div style={{fontSize:'9px',fontWeight:700,color:b.accentColor,background:`${b.accentColor}22`,padding:'1px 6px',borderRadius:'20px',width:'fit-content',marginBottom:'3px'}}>{b.badge}</div>}
                       <div style={{color:'#fff',fontWeight:700,fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.title}</div>
