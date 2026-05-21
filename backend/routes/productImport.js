@@ -41,7 +41,29 @@ router.post(
             })
 
             // PRODUCT DATA
-            const payload = {
+            // CLEAN IMAGE URL
+let image = (row.image || '').trim()
+
+if (image.startsWith('https//')) {
+  image = image.replace('https//', 'https://')
+}
+
+if (image.startsWith('http//')) {
+  image = image.replace('http//', 'http://')
+}
+
+// PRODUCT DATA
+const payload = {
+  name: row.name,
+  description: row.description,
+  price: Number(row.price || 0),
+  category: row.category || 'Electronics',
+  affiliateLink: row.affiliateLink,
+  rating: Number(row.rating || 4),
+  featured: row.featured === 'true',
+  image
+}
+            /*const payload = {
               name: row.name,
               description: row.description,
               price: Number(row.price || 0),
@@ -49,7 +71,7 @@ router.post(
               affiliateLink: row.affiliateLink,
               rating: Number(row.rating || 4),
               featured: row.featured === 'true'
-            }
+            }*/
 
             // ADD NEW ONLY
             if (mode === 'new') {

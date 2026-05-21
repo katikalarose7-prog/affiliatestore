@@ -374,7 +374,8 @@ const handleCsvImport = async e => {
                             <div style={s.thumb}>
                               {p.image ? <img
  src={
-  p.image?.startsWith('http')
+  p.image?.startsWith('http') || p.image?.startsWith('https://')
+
     ? p.image
     : `${STATIC}${p.image}`
 }
@@ -435,7 +436,8 @@ const handleCsvImport = async e => {
                 <div key={b._id} style={s.bannerCard}>
                   <div style={{...s.bannerPrev,background:`linear-gradient(135deg,${b.bgColor},${b.bgColor2})`}}>
 {b.image ? <img src={
-  b.image?.startsWith('http')
+  b.image?.startsWith('http') || b.image?.startsWith('https://')
+
     ? b.image
     : `${STATIC}${b.image}`
 } alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}                    <div style={{flex:1,minWidth:0}}>

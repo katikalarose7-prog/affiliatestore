@@ -4,6 +4,8 @@
 //
 // This imports all 50 Home Decor products directly into MongoDB
 // Images use Amazon CDN URLs directly — no upload needed
+const cloudinary = require('./config/cloudinary')
+const fs = require('fs')
 
 require('dotenv').config();
 const mongoose = require('mongoose');
