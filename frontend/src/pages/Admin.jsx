@@ -373,9 +373,11 @@ const handleCsvImport = async e => {
                           <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                             <div style={s.thumb}>
                               {p.image ? <img
-  src={
-    p.image
-  }
+ src={
+  p.image?.startsWith('http')
+    ? p.image
+    : `${API_URL}${p.image}`
+}
   alt={p.name}
   style={s.thumbImg}
 /> : <ImageIcon size={14} color="var(--text3)"/>}
@@ -432,7 +434,11 @@ const handleCsvImport = async e => {
               ) : banners.map(b => (
                 <div key={b._id} style={s.bannerCard}>
                   <div style={{...s.bannerPrev,background:`linear-gradient(135deg,${b.bgColor},${b.bgColor2})`}}>
-{b.image ? <img src={b.image} alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}                    <div style={{flex:1,minWidth:0}}>
+{b.image ? <img src={
+  b.image?.startsWith('http')
+    ? b.image
+    : `${API_URL}${b.image}`
+} alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}                    <div style={{flex:1,minWidth:0}}>
                       {b.badge && <div style={{fontSize:'9px',fontWeight:700,color:b.accentColor,background:`${b.accentColor}22`,padding:'1px 6px',borderRadius:'20px',width:'fit-content',marginBottom:'3px'}}>{b.badge}</div>}
                       <div style={{color:'#fff',fontWeight:700,fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.title}</div>
                       {b.subtitle && <div style={{color:'rgba(255,255,255,0.7)',fontSize:'10px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.subtitle}</div>}
