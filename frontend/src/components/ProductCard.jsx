@@ -53,8 +53,12 @@ export default function ProductCard({ product, index = 0 }) {
         <div style={{...s.imgInner, overflow:'hidden'}}>
           {product.image && !imgErr ? (
             <img
-              src={`${STATIC}${product.image}`}
-              alt={product.name}
+src={
+      product.image?.startsWith('http://') ||
+      product.image?.startsWith('https://')
+        ? product.image
+        : `${STATIC}${product.image}`
+    }              alt={product.name}
               className="card-img"
               style={{...s.img, transform: hovered ? 'scale(1.07)' : 'scale(1)'}}
               onError={() => setImgErr(true)}
