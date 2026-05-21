@@ -6,12 +6,27 @@ const fs = require('fs');
 const Product = require('../models/Product');
 const authMiddleware = require('../middleware/auth');
 
+const { CloudinaryStorage } = require('multer-storage-cloudinary')
+const cloudinary = require('../config/cloudinary')
+
 // Ensure uploads folder exists
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Multer config
-const storage = multer.diskStorage({
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'primeoffers',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+  },
+})
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+})
+/*const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -26,7 +41,7 @@ const upload = multer({
     if (allowed.test(path.extname(file.originalname).toLowerCase())) cb(null, true);
     else cb(new Error('Only image files allowed'));
   }
-});
+});*/
 
 // ─── PUBLIC ROUTES ───────────────────────────────────────────
 
@@ -94,7 +109,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { name, description, price, category, affiliateLink, rating, featured } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : '';
+    //const image = req.file ? `/uploads/${req.file.filename}` : '';
+const image = req.file ? req.file.path : '';
 
     const product = new Product({
       name, description,
@@ -122,10 +138,13 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     const { name, description, price, category, affiliateLink, rating, featured } = req.body;
 
     // If new image uploaded, delete old one
-    if (req.file && existing.image) {
+    /*if (req.file && existing.image) {
       const oldPath = path.join(__dirname, '..', existing.image);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }
+    }*/
+   if (req.file) {
+  updateData.image = req.file.path
+}
 
     const updateData = {
       name, description,

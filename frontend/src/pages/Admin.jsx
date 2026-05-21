@@ -102,10 +102,7 @@ const csvRef = useRef()
     setForm({ name:p.name, description:p.description, price:String(p.price), category:p.category, affiliateLink:p.affiliateLink, rating:String(p.rating), featured:p.featured })
     setImgFile(null); setImgPrev(
   p.image
-    ? p.image.startsWith('http')
-      ? p.image
-      : `${STATIC}${p.image}`
-    : ''
+    ? p.image : ''
 ); setModal(true)
   }
   const closeModal  = () => { setModal(false); setEditing(null); setImgFile(null); setImgPrev('') }
@@ -136,8 +133,9 @@ const csvRef = useRef()
   const openEditBanner = b  => {
     setEditingBanner(b)
     setBannerForm({ title:b.title, subtitle:b.subtitle, badge:b.badge, ctaText:b.ctaText, ctaLink:b.ctaLink, bgColor:b.bgColor, bgColor2:b.bgColor2, accentColor:b.accentColor, active:b.active, order:b.order })
-    setBannerImgFile(null); setBannerImgPrev(b.image ? `${STATIC}${b.image}` : ''); setBannerModal(true)
-  }
+setBannerImgFile(null); 
+setBannerImgPrev(b.image || ''); 
+setBannerModal(true)  }
   const closeBannerModal = () => { setBannerModal(false); setEditingBanner(null); setBannerImgFile(null); setBannerImgPrev('') }
   const handleBannerImg  = e => {
     const f = e.target.files[0]; if (!f) return
@@ -376,9 +374,7 @@ const handleCsvImport = async e => {
                             <div style={s.thumb}>
                               {p.image ? <img
   src={
-    p.image?.startsWith('http')
-      ? p.image
-      : `${STATIC}${p.image}`
+    p.image
   }
   alt={p.name}
   style={s.thumbImg}
@@ -436,8 +432,7 @@ const handleCsvImport = async e => {
               ) : banners.map(b => (
                 <div key={b._id} style={s.bannerCard}>
                   <div style={{...s.bannerPrev,background:`linear-gradient(135deg,${b.bgColor},${b.bgColor2})`}}>
-                    {b.image ? <img src={`${STATIC}${b.image}`} alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}
-                    <div style={{flex:1,minWidth:0}}>
+{b.image ? <img src={b.image} alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}                    <div style={{flex:1,minWidth:0}}>
                       {b.badge && <div style={{fontSize:'9px',fontWeight:700,color:b.accentColor,background:`${b.accentColor}22`,padding:'1px 6px',borderRadius:'20px',width:'fit-content',marginBottom:'3px'}}>{b.badge}</div>}
                       <div style={{color:'#fff',fontWeight:700,fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.title}</div>
                       {b.subtitle && <div style={{color:'rgba(255,255,255,0.7)',fontSize:'10px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.subtitle}</div>}
