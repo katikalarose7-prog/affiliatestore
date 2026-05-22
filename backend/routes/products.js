@@ -151,9 +151,7 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
       const oldPath = path.join(__dirname, '..', existing.image);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }*/
-   if (req.file) {
-  updateData.image = req.file.path
-}
+
 
     const updateData = {
       name, description,
