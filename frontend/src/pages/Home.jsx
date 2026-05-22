@@ -14,6 +14,8 @@ const CATS = [
   'Beauty',
   'Electronics',
     'Furniture',
+      'Home Decor',
+
   'Fashion',
   'Home & Kitchen',
   'Mobiles',
@@ -22,7 +24,6 @@ const CATS = [
   'Smart Watches',
   'Fitness',
   'Books',
-  'Home Decor',
   'Gaming',
   'Toys',
   'Grocery',
@@ -42,6 +43,8 @@ const CAT_META = {
   Beauty:            { icon:'💄', color:'#e11d48' },
   Electronics:       { icon:'⚡', color:'#0284c7' },
     Furniture:         { icon:'🛋️', color:'#78716c' },
+      'Home Decor':      { icon:'🏠', color:'#0f766e' },
+
   Fashion:           { icon:'👗', color:'#ea580c' },
   'Home & Kitchen':  { icon:'🍳', color:'#b45309' },
   Mobiles:           { icon:'📱', color:'#0ea5e9' },
@@ -50,7 +53,6 @@ const CAT_META = {
   'Smart Watches':   { icon:'⌚', color:'#0891b2' },
   Fitness:           { icon:'💪', color:'#059669' },
   Books:             { icon:'📚', color:'#6d28d9' },
-  'Home Decor':      { icon:'🏠', color:'#0f766e' },
   Gaming:            { icon:'🎮', color:'#9333ea' },
   Toys:              { icon:'🧸', color:'#f43f5e' },
   Grocery:           { icon:'🛒', color:'#16a34a' },
