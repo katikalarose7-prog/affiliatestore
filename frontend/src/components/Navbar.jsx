@@ -12,7 +12,7 @@ export default function Navbar({ onSearch, searchValue }) {
   const handleLogout = () => { logout(); navigate('/') }
 
   return (
-    <header style={s.header}>
+    <header style={s.header} className="sticky-top-pwa">
       <style>{`
         .nav-search-wrap:focus-within{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(37,99,235,0.12)!important}.nav-search-input:focus{outline:none!important;box-shadow:none!important;border:none!important}
         .theme-btn:hover{background:var(--bg3)!important}
@@ -131,6 +131,7 @@ const s = {
     borderBottom:'1px solid var(--nav-bdr)',
     position:'sticky',top:0,zIndex:100,
     boxShadow:'0 1px 0 var(--border)',
+    // Safe area handled via CSS class .sticky-top-pwa in index.css
   },
   inner:{
     maxWidth:'1300px',margin:'0 auto',

@@ -127,3 +127,42 @@ body *{transition:background-color .25s ease,border-color .25s ease,color .2s ea
   button,a{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   .cat-pill-btn{min-height:36px!important}
 }
+
+
+/* ─── PWA Safe Area — prevents overlap with status bar / notch ─── */
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+}
+
+/* Only applies when running as installed PWA (standalone mode) */
+@media all and (display-mode: standalone) {
+  /* Push entire app content down below the status bar */
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Sticky header needs extra top padding in standalone mode */
+  header,
+  nav,
+  .sticky-top-pwa {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  /* Bottom nav / install banner safe area */
+  .pwa-bottom-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* iOS specific — black-translucent status bar makes
+   content go behind it, so we need padding */
+@supports (padding-top: env(safe-area-inset-top)) {
+  @media all and (display-mode: standalone) {
+    body {
+      padding-top: max(env(safe-area-inset-top), 0px);
+    }
+  }
+}

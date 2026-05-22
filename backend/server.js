@@ -71,16 +71,23 @@ app.use(helmet({
 // ─── Rate Limiting ─────────────────────────────────────────────────────────
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for health checks and Railway internal IPs
+  skip: (req) => {
+    const path = req.path;
+    // Never rate-limit health checks
+    if (path === '/health' || path === '/') return true;
+    return false;
+  },
   message: { message: 'Too many requests. Please try again later.' },
 }));
 
 // Strict limit on login route
 app.use('/api/auth/login', rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   message: { message: 'Too many login attempts. Please wait 15 minutes.' },
 }));
 
@@ -103,14 +110,29 @@ app.use((req, res, next) => {
 });
 
 // ─── MongoDB ───────────────────────────────────────────────────────────────
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 8000,
-})
+const MONGO_OPTS = {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS:          45000,
+  maxPoolSize:              10,
+  minPoolSize:              2,
+  heartbeatFrequencyMS:     10000,
+  retryWrites:              true,
+  retryReads:               true,
+};
+ 
+mongoose.connect(process.env.MONGO_URI, MONGO_OPTS)
   .then(() => console.log('✅  MongoDB connected'))
   .catch(err => {
     console.error('❌  MongoDB connection failed:', err.message);
     process.exit(1);
   });
+// Auto-reconnect on disconnect
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected — reconnecting...');
+  setTimeout(() => mongoose.connect(process.env.MONGO_URI, MONGO_OPTS), 3000);
+});
+mongoose.connection.on('reconnected', () => console.log('✅  MongoDB reconnected'));
+mongoose.connection.on('error', err => console.error('❌  MongoDB error:', err.message));
 
 // ─── Routes ────────────────────────────────────────────────────────────────
 app.use('/api/products', require('./routes/products'));

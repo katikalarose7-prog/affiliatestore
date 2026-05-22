@@ -1,0 +1,17 @@
+# railway.toml
+# Place in: backend/railway.toml
+# Tells Railway how to run and keep your service alive
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand    = "node server.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[deploy.healthCheck]
+type     = "http"
+path     = "/health"
+timeout  = 10
+interval = 30

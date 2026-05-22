@@ -7,10 +7,11 @@
   "display_override": [
     "window-controls-overlay",
     "standalone",
-    "minimal-ui"
-  ],
+    "minimal-ui",
+    "browser"
+ ],
   "orientation": "portrait-primary",
-  "background_color": "#2563eb",
+  "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "scope": "/",
   "lang": "en-IN",
