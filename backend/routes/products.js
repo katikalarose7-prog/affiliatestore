@@ -163,7 +163,9 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
       rating: parseFloat(rating) || 0,
       featured: featured === 'true' || featured === true,
     };
-
+if (req.file) {
+  updateData.image = req.file.path
+}
     //if (req.file) updateData.image = `/uploads/${req.file.filename}`;
 
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
