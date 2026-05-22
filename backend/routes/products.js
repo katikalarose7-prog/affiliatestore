@@ -85,7 +85,16 @@ router.get('/', async (req, res) => {
   ]
 }
 
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    let products = await Product.find(filter).sort({ createdAt: -1 });
+
+if (req.query.sort !== 'latest') {
+  for (let i = products.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+
+    [products[i], products[j]] = [products[j], products[i]];
+  }
+}
+
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -155,7 +164,7 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
       featured: featured === 'true' || featured === true,
     };
 
-    if (req.file) updateData.image = `/uploads/${req.file.filename}`;
+    //if (req.file) updateData.image = `/uploads/${req.file.filename}`;
 
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(product);
