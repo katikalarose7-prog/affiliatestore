@@ -148,7 +148,8 @@ body *{transition:background-color .25s ease,border-color .25s ease,color .2s ea
   header,
   nav,
   .sticky-top-pwa {
-    padding-top: env(safe-area-inset-top, 0px) !important;
+     top: 0;
+  padding-top: min(env(safe-area-inset-top), 8px) !important;
   }
 
   /* Bottom nav / install banner safe area */
