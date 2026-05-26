@@ -18,10 +18,13 @@ const CATS = [
     'Best Sellers',
   'Fashion',
   'Beauty',
+    'Kitchen',
   'Electronics',
   'Home',
   'Fitness',
   'Books',
+    'Gaming',
+  'Travel',
 ];
 const EMPTY = { name:'', description:'', price:'', category:'Electronics', affiliateLink:'', rating:'4', featured:false, audience:'all', region:'all', tags:'' }
 const EMPTY_BANNER = { title:'', subtitle:'', badge:'', ctaText:'Shop Now', ctaLink:'', bgColor:'#1e3a8a', bgColor2:'#4338ca', accentColor:'#fbbf24', active:true, order:0 }

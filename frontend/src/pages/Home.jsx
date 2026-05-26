@@ -14,20 +14,26 @@ const CATS = [
   'Best Sellers',
   'Fashion',
   'Beauty',
+    'Kitchen',
   'Electronics',
   'Home',
   'Fitness',
   'Books',
+    'Gaming',
+  'Travel',
 ]
 const CAT_META = {
   All:           { icon:'🛍️', color:'#2563eb' },
     'Best Sellers': { icon:'🔥', color:'#dc2626' },
   Fashion:       { icon:'👗', color:'#ea580c' },
   Beauty:        { icon:'💄', color:'#e11d48' },
+  Kitchen: { icon:'🍳', color:'#f97316' },
   Electronics:   { icon:'⚡', color:'#0284c7' },
   Home:          { icon:'🏠', color:'#0f766e' },
   Fitness:       { icon:'💪', color:'#059669' },
   Books:         { icon:'📚', color:'#6d28d9' },
+  Gaming:  { icon:'🎮', color:'#7c3aed' },
+Travel:  { icon:'✈️', color:'#0ea5e9' },
 }
 
 function PrivacyModal({ onClose }) {
