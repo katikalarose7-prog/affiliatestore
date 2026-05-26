@@ -7,64 +7,27 @@ import BannerCarousel from '../components/BannerCarousel'
 import { SlidersHorizontal, Star, TrendingUp, Zap, ChevronDown, Shield, X } from 'lucide-react'
 import { API } from '../config'
 
-const DEFAULT = { category:'All', minPrice:'', maxPrice:'', minRating:0, featured:false }
+const DEFAULT = { category:'All', minPrice:'', maxPrice:'', minRating:0, featured:false, audience:'all', region:'all' }
 
 const CATS = [
   'All',
+  'Best Sellers',
+  'Fashion',
   'Beauty',
   'Electronics',
-    'Furniture',
-      'Home Decor',
-
-  'Fashion',
-  'Home & Kitchen',
-  'Mobiles',
-  'Laptops',
-  'Headphones',
-  'Smart Watches',
+  'Home',
   'Fitness',
   'Books',
-  'Gaming',
-  'Toys',
-  'Grocery',
-  'Footwear',
-  'Bags',
-  'Jewellery',
-  'Skincare',
-  'Hair Care',
-  'Office Supplies',
-  'Pet Supplies',
-  'Baby Products',
-  'Automotive'
 ]
-
 const CAT_META = {
-  All:               { icon:'🛍️', color:'#2563eb' },
-  Beauty:            { icon:'💄', color:'#e11d48' },
-  Electronics:       { icon:'⚡', color:'#0284c7' },
-    Furniture:         { icon:'🛋️', color:'#78716c' },
-      'Home Decor':      { icon:'🏠', color:'#0f766e' },
-
-  Fashion:           { icon:'👗', color:'#ea580c' },
-  'Home & Kitchen':  { icon:'🍳', color:'#b45309' },
-  Mobiles:           { icon:'📱', color:'#0ea5e9' },
-  Laptops:           { icon:'💻', color:'#4f46e5' },
-  Headphones:        { icon:'🎧', color:'#7c3aed' },
-  'Smart Watches':   { icon:'⌚', color:'#0891b2' },
-  Fitness:           { icon:'💪', color:'#059669' },
-  Books:             { icon:'📚', color:'#6d28d9' },
-  Gaming:            { icon:'🎮', color:'#9333ea' },
-  Toys:              { icon:'🧸', color:'#f43f5e' },
-  Grocery:           { icon:'🛒', color:'#16a34a' },
-  Footwear:          { icon:'👟', color:'#ea580c' },
-  Bags:              { icon:'👜', color:'#c2410c' },
-  Jewellery:         { icon:'💍', color:'#ca8a04' },
-  Skincare:          { icon:'🧴', color:'#db2777' },
-  'Hair Care':       { icon:'💇', color:'#be123c' },
-  'Office Supplies': { icon:'📎', color:'#475569' },
-  'Pet Supplies':    { icon:'🐶', color:'#0d9488' },
-  'Baby Products':   { icon:'🍼', color:'#ec4899' },
-  Automotive:        { icon:'🚗', color:'#dc2626' },
+  All:           { icon:'🛍️', color:'#2563eb' },
+    'Best Sellers': { icon:'🔥', color:'#dc2626' },
+  Fashion:       { icon:'👗', color:'#ea580c' },
+  Beauty:        { icon:'💄', color:'#e11d48' },
+  Electronics:   { icon:'⚡', color:'#0284c7' },
+  Home:          { icon:'🏠', color:'#0f766e' },
+  Fitness:       { icon:'💪', color:'#059669' },
+  Books:         { icon:'📚', color:'#6d28d9' },
 }
 
 function PrivacyModal({ onClose }) {
@@ -115,41 +78,56 @@ export default function Home() {
 
   useEffect(() => { const t = setTimeout(() => setDebounced(search), 350); return () => clearTimeout(t) }, [search])
 
-  const fetchFeatured = async () => {
-    try { const {data} = await axios.get(`${API}/products?featured=true`); setFeatured(data) } catch {}
-  }
-  const fetchBanners = async () => {
-    try { const {data} = await axios.get(`${API}/banners`); setBanners(data) } catch {}
-  }
+  // Fire banners + featured in parallel on first load
+  useEffect(() => {
+    Promise.all([
+      axios.get(`${API}/banners`).catch(() => ({ data: [] })),
+      axios.get(`${API}/products?featured=true&limit=4`).catch(() => ({ data: [] })),
+    ]).then(([bannersRes, featuredRes]) => {
+      setBanners(bannersRes.data)
+      setFeatured(featuredRes.data)
+    })
+  }, [])
+
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const p = {}
-      if (filters.category !== 'All') p.category  = filters.category
-      if (filters.minPrice)           p.minPrice   = filters.minPrice
-      if (filters.maxPrice)           p.maxPrice   = filters.maxPrice
-      if (filters.minRating > 0)      p.minRating  = filters.minRating
-      if (filters.featured)           p.featured   = true
-      if (debounced)                  p.search     = debounced
-      const {data} = await axios.get(`${API}/products`, { params:p })
+      const p = { limit: 40 }  // load 40 at a time — fast
+      if (filters.category !== 'All')                     p.category = filters.category
+      if (filters.minPrice)                               p.minPrice = filters.minPrice
+      if (filters.maxPrice)                               p.maxPrice = filters.maxPrice
+      if (filters.minRating > 0)                          p.minRating = filters.minRating
+      if (filters.featured)                               p.featured = true
+      if (filters.audience && filters.audience !== 'all') p.audience = filters.audience
+      if (filters.region   && filters.region   !== 'all') p.region   = filters.region
+      if (debounced)                                      p.search = debounced
+      const { data } = await axios.get(`${API}/products`, { params: p })
       setProducts(data)
     } catch {}
     finally { setLoading(false) }
   }, [filters, debounced])
 
-  useEffect(() => { fetchFeatured(); fetchBanners() }, [])
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
   const clearAll = () => { setFilters(DEFAULT); setSearch('') }
 
   const isSearching = debounced.trim().length > 0
-  const isFiltered  = filters.category !== 'All' || filters.minPrice || filters.maxPrice || filters.minRating > 0 || filters.featured
+  const isFiltered  = filters.category !== 'All' || filters.minPrice || filters.maxPrice || filters.minRating > 0 || filters.featured || (filters.audience && filters.audience !== 'all') || (filters.region && filters.region !== 'all')
   const showHero    = !isSearching && !isFiltered
-  const activeCount = [filters.category!=='All',filters.minPrice,filters.maxPrice,filters.minRating>0,filters.featured].filter(Boolean).length
+  const activeCount = [filters.category!=='All',filters.minPrice,filters.maxPrice,filters.minRating>0,filters.featured,filters.audience&&filters.audience!=='all',filters.region&&filters.region!=='all'].filter(Boolean).length
 
   return (
     <div style={s.page}>
       <style>{`
+        /* Category bar responsive */
+        @media(min-width:641px){
+          .cat-bar-mobile{display:none!important}
+          .cat-bar-desktop{display:flex!important}
+        }
+        @media(max-width:640px){
+          .cat-bar-desktop{display:none!important}
+          .cat-bar-mobile{display:block!important}
+        }
         .cat-pill:hover{opacity:0.85}
         .filter-toggle:hover{background:var(--bg3)!important}
         .buy-now-link:hover{opacity:0.88;transform:translateY(-1px)}
@@ -164,31 +142,244 @@ export default function Home() {
           .product-grid{grid-template-columns:repeat(2,1fr)!important}
           .featured-grid{grid-template-columns:repeat(2,1fr)!important}
         }
+          .top-nav-scroll::-webkit-scrollbar{
+  display:none;
+}
+
+
+
+.tooltip-wrap:hover .global-tooltip{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0);
+}
+
+
+  .category-scroll::-webkit-scrollbar{
+  display:none;
+}
+
+@media(max-width:768px){
+
+  .category-scroll{
+    gap:18px !important;
+    padding:0 14px !important;
+  }
+
+  .cat-nav-item{
+    font-size:13px !important;
+  }
+
+}
+.tooltip-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+}
+
+/* invisible bridge so hover doesn't break */
+
+
+.global-tooltip{
+  position:absolute;
+
+  top:calc(100% + 10px);
+  left:50%;
+
+  transform:translateX(-50%) translateY(-4px);
+
+  width:210px;
+  padding:10px 12px;
+
+  border-radius:12px;
+  background:var(--card-bg);
+  border:1px solid var(--border);
+
+  color:var(--text2);
+  font-size:12px;
+  line-height:1.5;
+
+  box-shadow:0 12px 30px rgba(0,0,0,0.12);
+
+  opacity:0;
+  visibility:hidden;
+
+  transition:all .18s ease;
+
+  z-index:999999;
+
+  pointer-events:none;
+}
+  
+.tooltip-wrap:hover .global-tooltip{
+  opacity:1;
+  visibility:visible;
+  transform:translateX(-50%) translateY(0);
+}
+
+
+@media(max-width:768px){
+  .global-tooltip{
+    display:none;
+  }
+}
+
       `}</style>
 
       {/* ── Sticky top ── */}
       <div style={s.stickyTop}>
         <Navbar onSearch={setSearch} searchValue={search}/>
 
-        {/* Category bar */}
-        <div style={s.catBar}>
-          <div style={s.catScroll}>
-            {CATS.map(cat => {
-              const m = CAT_META[cat]
-              const active = filters.category === cat
-              return (
-                <button key={cat} className="cat-pill"
-                  onClick={() => setFilters(f => ({...f, category:cat}))}
-                  style={{...s.catPill,
-                    ...(active ? {background:`${m.color}14`,border:`1.5px solid ${m.color}50`,color:m.color,fontWeight:600} : {}),
-                  }}>
-                  <span style={{fontSize:'14px'}}>{m.icon}</span>
-                  {cat}
-                </button>
-              )
-            })}
+        {/* Audience + Region quick tabs */}
+        {/* Audience + Region Nav */}
+<div style={s.topNav}>
+
+  {/* Audience */}
+  <div style={s.topNavGroup}>
+    {[
+      { val:'all', label:'All' },
+      { val:'women', label:'Women' },
+      { val:'men', label:'Men' },
+      { val:'kids', label:'Kids' },
+      { val:'unisex', label:'Unisex' },
+    ].map(item => {
+      const active = (filters.audience || 'all') === item.val
+
+      return (
+        <button
+          key={item.val}
+          onClick={() =>
+            setFilters(f => ({
+              ...f,
+              audience:item.val
+            }))
+          }
+          style={{
+            ...s.topNavItem,
+            ...(active ? s.topNavItemActive : {})
+          }}
+        >
+          {item.label}
+        </button>
+      )
+    })}
+  </div>
+
+  <div style={s.topNavDivider} />
+
+  {/* Region */}
+  <div style={s.topNavGroup}>
+    {[
+      { val:'all', label:'All Regions' },
+      { val:'india', label:'India' },
+      { val:'global', label:'Global' },
+    ].map(item => {
+      const active = (filters.region || 'all') === item.val
+
+      if(item.val === 'global'){
+        return (
+          <div
+            key={item.val}
+            className="tooltip-wrap"
+            style={{ position:'relative' }}
+          >
+            <button
+              onClick={() =>
+                setFilters(f => ({
+                  ...f,
+                  region:item.val
+                }))
+              }
+              style={{
+                ...s.topNavItem,
+                ...(active
+                  ? {
+                      ...s.topNavItemActive,
+                      borderBottom:'2px solid var(--indigo)',
+                    }
+                  : {})
+              }}
+            >
+              Global
+            </button>
+
+            <div className="global-tooltip">
+              For Amazon users outside India.
+            </div>
           </div>
-        </div>
+        )
+      }
+
+      return (
+        <button
+          key={item.val}
+          onClick={() =>
+            setFilters(f => ({
+              ...f,
+              region:item.val
+            }))
+          }
+          style={{
+            ...s.topNavItem,
+            ...(active
+              ? {
+                  ...s.topNavItemActive,
+                  borderBottom:'2px solid var(--indigo)',
+                }
+              : {})
+          }}
+        >
+          {item.label}
+        </button>
+      )
+    })}
+  </div>
+
+</div>
+
+        {/* Category bar */}
+      {/* Category Navigation */}
+<div style={s.catBar}>
+  <div className="category-scroll" style={s.catNav}>
+
+    {CATS.map(cat => {
+      const m = CAT_META[cat]
+      const active = filters.category === cat
+
+      return (
+        <button
+          key={cat}
+          className="cat-nav-item"
+          onClick={() =>
+            setFilters(f => ({
+              ...f,
+              category:cat
+            }))
+          }
+          style={{
+            ...s.catNavItem,
+            ...(active
+              ? {
+                  ...s.catNavItemActive,
+                  borderBottom:`2px solid ${m.color}`,
+                  color:m.color,
+                }
+              : {})
+          }}
+        >
+          <span style={{ fontSize:'15px' }}>
+            {m.icon}
+          </span>
+
+          <span>
+            {cat}
+          </span>
+        </button>
+      )
+    })}
+
+  </div>
+</div>
 
         {/* Context bar (search/filter active) */}
         {(isSearching || isFiltered) && (
@@ -339,18 +530,7 @@ export default function Home() {
           </div>
           <div style={s.footerBottom}>
             <p style={{color:'var(--text3)',fontSize:'11px'}}>© {new Date().getFullYear()} PrimeOffers. All rights reserved.</p>
-    {/* Website Owners */}
-    <div style={s.ownerWrap}>
-      <span style={s.ownerLabel}>Founded by</span>
-
-      <div style={s.ownerNames}>
-        <span style={s.ownerCard}>RoseMary Katikala</span>
-        <span style={s.ownerDivider}>•</span>
-        <span style={s.ownerCard}>Aaron Elijah Tully</span>
-      </div>
-    </div>
-
-            <p style={{color:'var(--text3)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
+            <p style={{color:'var(--text4)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
               Contains affiliate links. We may earn a commission on purchases.
             </p>
           </div>
@@ -364,9 +544,141 @@ export default function Home() {
 
 const s = {
   page:{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column'},
-  stickyTop:{position:'sticky',top:0,zIndex:100},
-  catBar:{background:'var(--cat-bg)',backdropFilter:'blur(16px)',borderBottom:'1px solid var(--cat-bdr)',overflowX:'auto',scrollbarWidth:'none'},
-  catScroll:{display:'flex',alignItems:'center',gap:'5px',padding:'8px clamp(14px,3vw,28px)',width:'max-content',minWidth:'100%'},
+stickyTop:{
+  position:'sticky',
+  top:0,
+  zIndex:1000,
+    overflow:'visible',
+
+},
+topNav:{
+  height:'52px',
+  display:'flex',
+  alignItems:'center',
+  gap:'18px',
+  padding:'0 clamp(14px,3vw,28px)',
+  background:'var(--bg)',
+  borderBottom:'1px solid var(--border)',
+
+   overflowX:'auto',
+  overflowY:'visible',
+
+  scrollbarWidth:'none',
+  WebkitOverflowScrolling:'touch',
+},
+
+topNavGroup:{
+  display:'flex',
+  alignItems:'center',
+  gap:'22px',
+  flexShrink:0,
+},
+
+topNavDivider:{
+  width:'1px',
+  height:'18px',
+  background:'var(--border)',
+  flexShrink:0,
+},
+
+topNavItem:{
+  height:'52px',
+  display:'flex',
+  alignItems:'center',
+  background:'transparent',
+  border:'none',
+  borderBottom:'2px solid transparent',
+  color:'var(--text2)',
+  fontSize:'14px',
+  fontWeight:500,
+  cursor:'pointer',
+  transition:'all .15s ease',
+  whiteSpace:'nowrap',
+  padding:'0',
+},
+
+topNavItemActive:{
+  color:'var(--text)',
+  fontWeight:700,
+  borderBottom:'2px solid var(--accent)',
+},
+
+globalTooltip:{
+  width:'210px',
+  padding:'10px 12px',
+  borderRadius:'12px',
+  background:'var(--card-bg)',
+  border:'1px solid var(--border)',
+  color:'var(--text2)',
+  fontSize:'12px',
+  lineHeight:'1.5',
+  boxShadow:'0 12px 30px rgba(0,0,0,0.12)',
+},
+
+  audBar:{background:'var(--bg)',borderBottom:'1px solid var(--border)',overflowX:'auto',scrollbarWidth:'none'},
+  audScroll:{display:'flex',alignItems:'center',gap:'5px',padding:'8px clamp(14px,3vw,28px)',width:'max-content',minWidth:'100%'},
+  audPill:{display:'flex',alignItems:'center',gap:'5px',padding:'5px 13px',borderRadius:'20px',background:'var(--bg2)',border:'1.5px solid var(--border)',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,transition:'all .15s',minHeight:'32px'},
+  catBar:{
+  background:'var(--cat-bg)',
+  borderBottom:'1px solid var(--cat-bdr)',
+  overflowX:'auto',
+},
+  // Desktop: wrapping pill row
+  catDesktop:{
+    display:'flex',flexWrap:'wrap',alignItems:'center',
+    gap:'5px',padding:'8px clamp(14px,3vw,28px)',
+  },
+  // Mobile: single dropdown row
+  catMobile:{
+    display:'none', // shown via CSS media query below
+    padding:'8px clamp(14px,3vw,20px)',
+  },
+  catSelectWrap:{
+    display:'flex',alignItems:'center',gap:'8px',
+    background:'var(--bg2)',border:'1.5px solid var(--border)',
+    borderRadius:'20px',padding:'6px 14px',width:'100%',maxWidth:'100%',
+    cursor:'pointer',
+  },
+  catSelect:{
+    flex:1,background:'transparent',border:'none',
+    color:'var(--text)',fontSize:'13px',fontWeight:500,
+    cursor:'pointer',outline:'none',
+    appearance:'none',WebkitAppearance:'none',
+  },
+  catNav:{
+  height:'54px',
+  display:'flex',
+  alignItems:'center',
+  gap:'24px',
+  padding:'0 clamp(14px,3vw,28px)',
+  width:'max-content',
+  minWidth:'100%',
+  scrollbarWidth:'none',
+  WebkitOverflowScrolling:'touch',
+},
+
+catNavItem:{
+  height:'54px',
+  display:'flex',
+  alignItems:'center',
+  gap:'7px',
+  background:'transparent',
+  border:'none',
+  borderBottom:'2px solid transparent',
+  color:'var(--text2)',
+  fontSize:'14px',
+  fontWeight:500,
+  cursor:'pointer',
+  whiteSpace:'nowrap',
+  transition:'all .15s ease',
+  padding:'0',
+  flexShrink:0,
+},
+
+catNavItemActive:{
+  color:'var(--text)',
+  fontWeight:700,
+},
   catPill:{display:'flex',alignItems:'center',gap:'5px',padding:'5px 13px',borderRadius:'20px',background:'var(--bg2)',border:'1.5px solid var(--border)',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,transition:'all .15s',minHeight:'32px'},
   ctxBar:{background:'var(--bg2)',borderBottom:'1px solid var(--border)',padding:'8px 0'},
   ctxInner:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px'},
@@ -403,41 +715,6 @@ const s = {
   footerLinks:{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'},
   footerLink:{display:'flex',alignItems:'center',gap:'4px',background:'none',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',border:'none',padding:0,transition:'color .15s'},
   footerBottom:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'},
-  ownerWrap:{
-  display:'flex',
-  alignItems:'center',
-  gap:'10px',
-  flexWrap:'wrap',
-  marginTop:'2px',
-},
-
-ownerLabel:{
-  color:'var(--text3)',
-  fontSize:'11px',
-  fontWeight:500,
-  letterSpacing:'0.3px',
-  textTransform:'uppercase',
-},
-
-ownerNames:{
-  display:'flex',
-  alignItems:'center',
-  gap:'8px',
-  flexWrap:'wrap',
-},
-
-ownerCard:{
-
-  padding:'5px 10px',
-  borderRadius:'999px',
-  fontSize:'11px',
-  color:'var(--text3)',
-},
-
-ownerDivider:{
-  color:'var(--text4)',
-  fontSize:'12px',
-},
 }
 
 const ps = {

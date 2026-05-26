@@ -3,87 +3,36 @@ import { useState, useEffect } from 'react'
 
 const CATS = [
   'All',
+  'Best Sellers',
+  'Fashion',
   'Beauty',
   'Electronics',
-  'Fashion',
-  'Home & Kitchen',
-  'Mobiles',
-  'Laptops',
-  'Headphones',
-  'Smart Watches',
+  'Home',
   'Fitness',
   'Books',
-  'Home Decor',
-  'Gaming',
-  'Toys',
-  'Grocery',
-  'Footwear',
-  'Bags',
-  'Jewellery',
-  'Skincare',
-  'Hair Care',
-  'Furniture',
-  'Office Supplies',
-  'Pet Supplies',
-  'Baby Products',
-  'Automotive'
 ]
 
-const CAT_ICON = {
-  All:'🛍️',
-  Beauty:'💄',
-  Electronics:'⚡',
-  Fashion:'👗',
-  'Home & Kitchen':'🍳',
-  Mobiles:'📱',
-  Laptops:'💻',
-  Headphones:'🎧',
-  'Smart Watches':'⌚',
-  Fitness:'💪',
-  Books:'📚',
-  'Home Decor':'🏠',
-  Gaming:'🎮',
-  Toys:'🧸',
-  Grocery:'🛒',
-  Footwear:'👟',
-  Bags:'👜',
-  Jewellery:'💍',
-  Skincare:'🧴',
-  'Hair Care':'💇',
-  Furniture:'🛋️',
-  'Office Supplies':'📎',
-  'Pet Supplies':'🐶',
-  'Baby Products':'🍼',
-  Automotive:'🚗'
-}
+ const CAT_ICON = {
+  All: '🛍️',
+  'Best Sellers': '🔥',
+  Fashion: '👗',
+  Beauty: '💄',
+  Electronics: '⚡',
+  Home: '🏠',
+  Fitness: '💪',
+  Books: '📚',
+};
 
-const CAT_COLOR = {
-  All:'#2563eb',
-  Beauty:'#e11d48',
-  Electronics:'#0284c7',
-  Fashion:'#ea580c',
-  'Home & Kitchen':'#b45309',
-  Mobiles:'#0ea5e9',
-  Laptops:'#4f46e5',
-  Headphones:'#7c3aed',
-  'Smart Watches':'#0891b2',
-  Fitness:'#059669',
-  Books:'#6d28d9',
-  'Home Decor':'#0f766e',
-  Gaming:'#9333ea',
-  Toys:'#f43f5e',
-  Grocery:'#16a34a',
-  Footwear:'#ea580c',
-  Bags:'#c2410c',
-  Jewellery:'#ca8a04',
-  Skincare:'#db2777',
-  'Hair Care':'#be123c',
-  Furniture:'#78716c',
-  'Office Supplies':'#475569',
-  'Pet Supplies':'#0d9488',
-  'Baby Products':'#ec4899',
-  Automotive:'#dc2626'
-}
+ const CAT_COLOR = {
+  All: '#2563eb',
+  'Best Sellers': '#f59e0b',
+  Fashion: '#ea580c',
+  Beauty: '#e11d48',
+  Electronics: '#0284c7',
+  Home: '#16a34a',
+  Fitness: '#059669',
+  Books: '#6d28d9',
+};
 function useIsMobile(bp = 900) {
   const [v, setV] = useState(() => typeof window !== 'undefined' ? window.innerWidth < bp : false)
   useEffect(() => {
@@ -157,6 +106,61 @@ export default function FilterSidebar({ filters, onChange, onClear, visible, onC
             })}
           </div>
         </div>
+
+ {/* Audience */}
+        <div style={s.section}>
+          <div style={s.secLabel}>For</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+            {[
+              {val:'all',    label:'Everyone', icon:'👥'},
+              {val:'men',    label:'Men',       icon:'👨'},
+              {val:'women',  label:'Women',     icon:'👩'},
+              {val:'kids',   label:'Kids',      icon:'👦'},
+              {val:'unisex', label:'Unisex',    icon:'🤝'},
+            ].map(({val,label,icon}) => {
+              const active = (filters.audience||'all') === val
+              return (
+                <button key={val}
+                  onClick={() => set('audience', val)}
+                  style={{
+                    ...s.ratingBtn,
+                    padding:'6px 12px',
+                    display:'flex',alignItems:'center',gap:'5px',
+                    ...(active ? s.ratingBtnActive : {}),
+                  }}>
+                  <span>{icon}</span>{label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+ 
+        {/* Region */}
+        <div style={s.section}>
+          <div style={s.secLabel}>Region</div>
+          <div style={{display:'flex',gap:'2px'}}>
+            {[
+              {val:'all',    label:'All',    icon:'🌍'},
+              {val:'india',  label:'India',  icon:'🇮🇳'},
+              {val:'global', label:'Global', icon:'🌐'},
+            ].map(({val,label,icon}) => {
+              const active = (filters.region||'all') === val
+              return (
+                <button key={val}
+                  onClick={() => set('region', val)}
+                  style={{
+                    ...s.ratingBtn,
+                    padding:'6px 12px',
+                    display:'flex',alignItems:'center',gap:'5px',
+                    ...(active ? s.ratingBtnActive : {}),
+                  }}>
+                  <span>{icon}</span>{label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+ 
 
         {/* Price */}
         <div style={s.section}>

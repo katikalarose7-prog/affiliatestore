@@ -5,14 +5,14 @@ import { ExternalLink, ShoppingCart } from 'lucide-react'
 const STATIC = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const CAT_META = {
-  Beauty:       { icon:'💄', color:'#e11d48', bg:'rgba(225,29,72,0.08)'   },
-  Headphones:   { icon:'🎧', color:'#7c3aed', bg:'rgba(124,58,237,0.08)'  },
-  Electronics:  { icon:'⚡', color:'#0284c7', bg:'rgba(2,132,199,0.08)'   },
-  Fashion:      { icon:'👗', color:'#ea580c', bg:'rgba(234,88,12,0.08)'   },
-  Kitchen:      { icon:'🍳', color:'#b45309', bg:'rgba(180,83,9,0.08)'    },
-  Fitness:      { icon:'💪', color:'#059669', bg:'rgba(5,150,105,0.08)'   },
-  Books:        { icon:'📚', color:'#6d28d9', bg:'rgba(109,40,217,0.08)'  },
-  'Home Decor': { icon:'🏠', color:'#0f766e', bg:'rgba(15,118,110,0.08)'  },
+  All:           { icon:'🛍️', color:'#2563eb' },
+    'Best Sellers': { icon:'🔥', color:'#dc2626' },
+  Fashion:       { icon:'👗', color:'#ea580c' },
+  Beauty:        { icon:'💄', color:'#e11d48' },
+  Electronics:   { icon:'⚡', color:'#0284c7' },
+  Home:          { icon:'🏠', color:'#0f766e' },
+  Fitness:       { icon:'💪', color:'#059669' },
+  Books:         { icon:'📚', color:'#6d28d9' },
 }
 
 // Deterministic label from product id

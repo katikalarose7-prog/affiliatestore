@@ -1,110 +1,196 @@
-const express = require('express');
-const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const Product = require('../models/Product');
+const express        = require('express');
+const router         = express.Router();
+const multer         = require('multer');
+const cloudinary     = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const Product        = require('../models/Product');
 const authMiddleware = require('../middleware/auth');
 
-const { CloudinaryStorage } = require('multer-storage-cloudinary')
-const cloudinary = require('../config/cloudinary')
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-// Multer config
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'primeoffers',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    folder:          'primeoffers/products',
+    allowed_formats: ['jpg','jpeg','png','webp','gif'],
+    transformation:  [{ width:800, height:800, crop:'limit', quality:'auto', fetch_format:'auto' }],
   },
-})
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-})
-/*const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  }
 });
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp|gif/;
-    if (allowed.test(path.extname(file.originalname).toLowerCase())) cb(null, true);
-    else cb(new Error('Only image files allowed'));
-  }
-});*/
 
-// ─── PUBLIC ROUTES ───────────────────────────────────────────
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// GET all products (with filters)
+// ── In-memory cache ────────────────────────────────────────────────
+// Layer 1: global.__productCache  — set at server startup (immediate)
+// Layer 2: local cache            — refreshed every 3 minutes
+const TTL = 3 * 60 * 1000
+const cache = {
+  data:      null,
+  timestamp: 0,
+  isValid()  {
+    // Check local cache first
+    if (this.data && (Date.now() - this.timestamp) < TTL) return true
+    // Fall back to startup warm-up cache
+    if (global.__productCache && (Date.now() - global.__productCache.ts) < TTL) {
+      this.data      = global.__productCache.data
+      this.timestamp = global.__productCache.ts
+      return true
+    }
+    return false
+  },
+  set(data)  { this.data = data; this.timestamp = Date.now(); global.__productCache = { data, ts: Date.now() } },
+  clear()    { this.data = null; this.timestamp = 0; global.__productCache = null },
+};
+
+// ═══════════════════════════════════════════════════════════
+// PUBLIC: GET /api/products
+// ═══════════════════════════════════════════════════════════
 router.get('/', async (req, res) => {
   try {
-    const { category, minPrice, maxPrice, minRating, featured, search } = req.query;
-    let filter = {};
+    const {
+      category, audience, region,
+      minPrice, maxPrice, minRating,
+      featured, search, tags,
+      sort  = 'random',
+      limit = 40,          // ← lowered from 200 to 40 for fast initial load
+      page  = 1,
+    } = req.query;
+
+    const lim  = Math.min(parseInt(limit) || 40, 200); // max 200 per request
+    const skip = (parseInt(page) - 1) * lim;
+
+    // ── Use cache for the default homepage request (no filters) ──
+    const isDefaultRequest = !category && !audience && !region &&
+                             !minPrice  && !maxPrice  && !minRating &&
+                             !featured  && !search    && !tags &&
+                             sort === 'random' && page == 1;
+
+    if (isDefaultRequest && cache.isValid()) {
+      const cached = cache.data.slice(0, lim);
+      res.set('X-Cache', 'HIT');
+      return res.json(cached);
+    }
+
+    // ── Build filter ─────────────────────────────────────────
+    const filter = {};
 
     if (category && category !== 'All') filter.category = category;
-    if (featured === 'true') filter.featured = true;
+
+    if (audience && audience !== 'all') {
+      filter.audience = { $in: [audience, 'all', 'unisex'] };
+    }
+    if (region && region !== 'all') {
+      filter.region = { $in: [region, 'all'] };
+    }
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
     if (minRating) filter.rating = { $gte: parseFloat(minRating) };
-    //if (search) filter.name = { $regex: search, $options: 'i' };
+    if (featured === 'true') filter.featured = true;
     if (search) {
-  const keywords = search.trim().split(/\s+/)
-
-  filter.$or = [
-    {
-      name: {
-        $regex: keywords.join('|'),
-        $options: 'i'
-      }
-    },
-    {
-      description: {
-        $regex: keywords.join('|'),
-        $options: 'i'
-      }
-    },
-    {
-      category: {
-        $regex: keywords.join('|'),
-        $options: 'i'
-      }
+      filter.$or = [
+        { name:        { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
     }
-  ]
-}
+    if (tags) {
+      const tagList = tags.split(',').map(t => t.trim());
+      filter.tags = { $in: tagList };
+    }
 
-    let products = await Product.find(filter).sort({ createdAt: -1 });
+    // ── Query ────────────────────────────────────────────────
+    let products;
 
-if (req.query.sort !== 'latest') {
-  for (let i = products.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    if (sort === 'random') {
+      // ── FAST random: fetch slightly more than needed then JS shuffle ──
+      // $sample on 1500 docs = full scan = SLOW
+      // Instead: fetch with a fast indexed sort then shuffle in JS = FAST
+      const fetchLimit = Math.min(lim * 3, 300); // fetch 3x then shuffle down
+      products = await Product.find(filter)
+        .select('name description image category affiliateLink rating featured audience region') // only needed fields
+        .limit(fetchLimit)
+        .lean();                                  // plain JS objects, faster than Mongoose docs
 
-    [products[i], products[j]] = [products[j], products[i]];
-  }
-}
+      // Fisher-Yates shuffle in memory
+      for (let i = products.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [products[i], products[j]] = [products[j], products[i]];
+      }
+      products = products.slice(0, lim);
+
+    } else if (sort === 'latest') {
+      products = await Product.find(filter)
+        .select('name description image category affiliateLink rating featured audience region')
+        .sort({ createdAt: -1 })
+        .skip(skip).limit(lim).lean();
+
+    } else if (sort === 'rating') {
+      products = await Product.find(filter)
+        .select('name description image category affiliateLink rating featured audience region')
+        .sort({ rating: -1 })
+        .skip(skip).limit(lim).lean();
+
+    } else if (sort === 'price_asc') {
+      products = await Product.find(filter)
+        .select('name description image category affiliateLink rating featured audience region price')
+        .sort({ price: 1 })
+        .skip(skip).limit(lim).lean();
+
+    } else if (sort === 'price_desc') {
+      products = await Product.find(filter)
+        .select('name description image category affiliateLink rating featured audience region price')
+        .sort({ price: -1 })
+        .skip(skip).limit(lim).lean();
+
+    } else {
+      products = await Product.find(filter)
+        .select('name description image category affiliateLink rating featured audience region')
+        .limit(lim).lean();
+    }
+
+    // ── Cache the default homepage result ────────────────────
+    if (isDefaultRequest) {
+      cache.set(products);
+      res.set('X-Cache', 'MISS');
+    }
+
+    // ── HTTP cache headers (browser + Cloudflare edge cache) ─
+    // Public GET requests can be cached at CDN level for 60 seconds
+    if (req.method === 'GET' && !search) {
+      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    }
 
     res.json(products);
+  } catch (err) {
+    console.error('GET /products error:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/products/stats ────────────────────────────────
+router.get('/stats', authMiddleware, async (req, res) => {
+  try {
+    const [total, byAudience, byRegion, byCategory] = await Promise.all([
+      Product.countDocuments(),
+      Product.aggregate([{ $group: { _id: '$audience', count: { $sum: 1 } } }]),
+      Product.aggregate([{ $group: { _id: '$region',   count: { $sum: 1 } } }]),
+      Product.aggregate([{ $group: { _id: '$category', count: { $sum: 1 } } }]),
+    ]);
+    res.json({ total, byAudience, byRegion, byCategory });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET single product
+// ── GET /api/products/:id ──────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).lean();
     if (!product) return res.status(404).json({ message: 'Not found' });
     res.json(product);
   } catch (err) {
@@ -112,81 +198,113 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ─── ADMIN PROTECTED ROUTES ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ADMIN ROUTES
+// ═══════════════════════════════════════════════════════════
 
-// POST create product
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, price, category, affiliateLink, rating, featured } = req.body;
-    //const image = req.file ? `/uploads/${req.file.filename}` : '';
-const image = req.file ? req.file.path : '';
+    const { name, description, price, category, affiliateLink,
+            rating, featured, audience, region, tags } = req.body;
+const image = req.file
+  ? `/uploads/${req.file.filename}`
+  : ''
 
-    const product = new Product({
-      name, description,
-      price: parseFloat(price),
-      image,
-      category,
-      affiliateLink,
-      rating: parseFloat(rating) || 0,
-      featured: featured === 'true' || featured === true
-    });
-
+const product = new Product({
+  name,
+  description,
+  price: parseFloat(price),
+  image,
+  category,
+  affiliateLink,
+  rating: parseFloat(rating) || 0,
+  featured: featured === 'true' || featured === true,
+  audience: audience || 'all',
+  region: region || 'all',
+  tags: tags
+    ? tags.split(',').map(t => t.trim()).filter(Boolean)
+    : [],
+})
+   
     await product.save();
+    cache.clear(); // invalidate cache on write
     res.status(201).json(product);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// PUT update product
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     const existing = await Product.findById(req.params.id);
     if (!existing) return res.status(404).json({ message: 'Not found' });
 
-    const { name, description, price, category, affiliateLink, rating, featured } = req.body;
+    if (req.file && existing.image && existing.image.includes('cloudinary')) {
+      try {
+        const parts = existing.image.split('/');
+        const file  = parts[parts.length - 1].split('.')[0];
+        const folder= parts[parts.length - 2];
+        await cloudinary.uploader.destroy(`${folder}/${file}`);
+      } catch (e) { console.warn('Could not delete old image:', e.message); }
+    }
 
-    // If new image uploaded, delete old one
-    /*if (req.file && existing.image) {
-      const oldPath = path.join(__dirname, '..', existing.image);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }*/
-
-
+    const { name, description, price, category, affiliateLink,
+            rating, featured, audience, region, tags } = req.body;
     const updateData = {
       name, description,
-      price: parseFloat(price),
-      category,
-      affiliateLink,
-      rating: parseFloat(rating) || 0,
+      price:    parseFloat(price),
+      category, affiliateLink,
+      rating:   parseFloat(rating) || 0,
       featured: featured === 'true' || featured === true,
+      audience: audience || 'all',
+      region:   region   || 'all',
+      tags:     tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
     };
-if (req.file) {
-  updateData.image = req.file.path
-}
-    //if (req.file) updateData.image = `/uploads/${req.file.filename}`;
+    if (req.file) updateData.image = `/uploads/${req.file.filename}`
 
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    cache.clear(); // invalidate cache on write
     res.json(product);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE product
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Not found' });
 
-    // Delete image file
-    if (product.image) {
-      const imgPath = path.join(__dirname, '..', product.image);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    if (product.image && product.image.includes('cloudinary')) {
+      try {
+        const parts = product.image.split('/');
+        const file  = parts[parts.length - 1].split('.')[0];
+        const folder= parts[parts.length - 2];
+        await cloudinary.uploader.destroy(`${folder}/${file}`);
+      } catch (e) { console.warn('Could not delete image:', e.message); }
     }
 
     await Product.findByIdAndDelete(req.params.id);
+    cache.clear(); // invalidate cache on write
     res.json({ message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Bulk update ────────────────────────────────────────────
+router.post('/bulk-update', authMiddleware, async (req, res) => {
+  try {
+    const { filter, update } = req.body;
+    if (!filter || !update) return res.status(400).json({ message: 'filter and update required' });
+    const allowed = ['audience','region','tags','featured','category'];
+    const safeUpdate = {};
+    for (const key of allowed) {
+      if (update[key] !== undefined) safeUpdate[key] = update[key];
+    }
+    const result = await Product.updateMany(filter, { $set: safeUpdate });
+    cache.clear();
+    res.json({ message: `Updated ${result.modifiedCount} products`, modified: result.modifiedCount });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -14,32 +14,16 @@ import {
 import { API, STATIC } from '../config'
 
 const CATS = [
+  'All',
+    'Best Sellers',
+  'Fashion',
   'Beauty',
   'Electronics',
-  'Fashion',
-  'Home & Kitchen',
-  'Mobiles',
-  'Laptops',
-  'Headphones',
-  'Smart Watches',
+  'Home',
   'Fitness',
   'Books',
-  'Home Decor',
-  'Gaming',
-  'Toys',
-  'Grocery',
-  'Footwear',
-  'Bags',
-  'Jewellery',
-  'Skincare',
-  'Hair Care',
-  'Furniture',
-  'Office Supplies',
-  'Pet Supplies',
-  'Baby Products',
-  'Automotive'
 ];
-const EMPTY = { name:'', description:'', price:'', category:'Electronics', affiliateLink:'', rating:'4', featured:false }
+const EMPTY = { name:'', description:'', price:'', category:'Electronics', affiliateLink:'', rating:'4', featured:false, audience:'all', region:'all', tags:'' }
 const EMPTY_BANNER = { title:'', subtitle:'', badge:'', ctaText:'Shop Now', ctaLink:'', bgColor:'#1e3a8a', bgColor2:'#4338ca', accentColor:'#fbbf24', active:true, order:0 }
 
 export default function Admin() {
@@ -83,7 +67,7 @@ const csvRef = useRef()
 
   const fetchProducts = async () => {
     setLoading(true)
-    try { const { data } = await axios.get(`${API}/products`); setProducts(data) }
+    try { const { data } = await axios.get(`${API}/products?sort=latest`); setProducts(data) }
     catch { toast.error('Failed to load products') }
     finally { setLoading(false) }
   }
@@ -99,7 +83,18 @@ const csvRef = useRef()
   const openAdd  = () => { setEditing(null); setForm(EMPTY); setImgFile(null); setImgPrev(''); setModal(true) }
   const openEdit = p  => {
     setEditing(p)
-    setForm({ name:p.name, description:p.description, price:String(p.price), category:p.category, affiliateLink:p.affiliateLink, rating:String(p.rating), featured:p.featured })
+setForm({
+  name: p.name,
+  description: p.description,
+  price: String(p.price),
+  category: p.category,
+  affiliateLink: p.affiliateLink,
+  rating: String(p.rating),
+  featured: p.featured,
+  audience: p.audience || 'all',
+  region: p.region || 'all',
+  tags: p.tags?.join(', ') || ''
+})
     setImgFile(null); setImgPrev(
   p.image
     ? p.image : ''
@@ -505,8 +500,66 @@ const handleCsvImport = async e => {
                     <div style={s.field}><label style={s.lbl}>Price (₹) *</label><input style={s.inp} type="number" min="0" required placeholder="2999" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/></div>
                     <div style={s.field}><label style={s.lbl}>Category *</label><select style={s.inp} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
                   </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+
+  <div style={s.field}>
+    <label style={s.lbl}>Audience</label>
+
+    <select
+      style={s.inp}
+      value={form.audience}
+      onChange={e =>
+        setForm(f => ({
+          ...f,
+          audience: e.target.value
+        }))
+      }
+    >
+      <option value="all">All</option>
+      <option value="women">Women</option>
+      <option value="men">Men</option>
+      <option value="kids">Kids</option>
+      <option value="unisex">Unisex</option>
+    </select>
+  </div>
+
+  <div style={s.field}>
+    <label style={s.lbl}>Region</label>
+
+    <select
+      style={s.inp}
+      value={form.region}
+      onChange={e =>
+        setForm(f => ({
+          ...f,
+          region: e.target.value
+        }))
+      }
+    >
+      <option value="all">All</option>
+      <option value="india">India</option>
+      <option value="global">Global</option>
+    </select>
+  </div>
+
+</div>
                   <div style={s.field}><label style={s.lbl}>Affiliate Link *</label><input style={s.inp} type="url" required placeholder="https://amzn.to/…" value={form.affiliateLink} onChange={e=>setForm(f=>({...f,affiliateLink:e.target.value}))}/></div>
                 </div>
+                <div style={s.field}>
+  <label style={s.lbl}>Tags</label>
+
+  <input
+    style={s.inp}
+    placeholder="hair oil, skincare, women fashion"
+    value={form.tags}
+    onChange={e =>
+      setForm(f => ({
+        ...f,
+        tags: e.target.value
+      }))
+    }
+  />
+</div>
               </div>
               <div style={s.modalFoot}>
                 <button type="button" onClick={closeModal} style={s.cancelBtn}>Cancel</button>

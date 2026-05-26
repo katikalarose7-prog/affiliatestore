@@ -8,6 +8,9 @@ const path         = require('path');
 
 const app = express();
 
+const imageProxyRoutes = require('./routes/imageProxy')
+
+app.use('/api/img', imageProxyRoutes)
 // ─── Trust Railway/Render proxy ────────────────────────────────────────────
 // Required so rate limiting works correctly behind Railway's reverse proxy
 app.set('trust proxy', 1);
@@ -40,9 +43,6 @@ const corsOptions = {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
-//csv
-app.use('/api/products', require('./routes/productImport'))
-
 // ─── Security Headers (Helmet) ─────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -71,7 +71,7 @@ app.use(helmet({
 // ─── Rate Limiting ─────────────────────────────────────────────────────────
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 1000,                  // raised from 200 → 1000 per IP per 15min
   standardHeaders: true,
   legacyHeaders: false,
   // Skip rate limiting for health checks and Railway internal IPs
@@ -87,7 +87,7 @@ app.use(rateLimit({
 // Strict limit on login route
 app.use('/api/auth/login', rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 20,                   // raised slightly — 10 was too strict for testing
   message: { message: 'Too many login attempts. Please wait 15 minutes.' },
 }));
 
@@ -119,13 +119,34 @@ const MONGO_OPTS = {
   retryWrites:              true,
   retryReads:               true,
 };
- 
+
 mongoose.connect(process.env.MONGO_URI, MONGO_OPTS)
-  .then(() => console.log('✅  MongoDB connected'))
+  .then(async () => {
+    console.log('✅  MongoDB connected')
+    // Pre-warm cache on startup so first request is instant
+    try {
+      const Product = require('./models/Product')
+      const products = await Product.find({})
+        .select('name description image category affiliateLink rating featured audience region')
+        .limit(120)
+        .lean()
+      // shuffle
+      for (let i = products.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [products[i], products[j]] = [products[j], products[i]]
+      }
+      // store in module-level cache via a simple global
+      global.__productCache = { data: products, ts: Date.now() }
+      console.log(`✅  Cache pre-warmed with ${products.length} products`)
+    } catch(e) {
+      console.warn('⚠️  Cache warm-up failed:', e.message)
+    }
+  })
   .catch(err => {
     console.error('❌  MongoDB connection failed:', err.message);
     process.exit(1);
   });
+
 // Auto-reconnect on disconnect
 mongoose.connection.on('disconnected', () => {
   console.warn('⚠️  MongoDB disconnected — reconnecting...');
@@ -176,9 +197,26 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ──────────────────────────────────────────────────────────
-// Railway injects PORT automatically — always use process.env.PORT
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀  Server running on port ${PORT}`);
   console.log(`🌍  Environment: ${process.env.NODE_ENV || 'development'}`);
+
+  // ── Self-ping every 14 minutes to prevent Railway cold start ──────────
+  // Railway free tier sleeps after ~15 min of inactivity
+  // This keeps the server awake 24/7 at zero cost
+  if (process.env.NODE_ENV === 'production' && process.env.RAILWAY_PUBLIC_DOMAIN) {
+    const https = require('https')
+    const pingURL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/health`
+    
+    setInterval(() => {
+      https.get(pingURL, (res) => {
+        console.log(`♻️   Self-ping: ${res.statusCode}`)
+      }).on('error', (e) => {
+        console.warn('⚠️  Self-ping failed:', e.message)
+      })
+    }, 14 * 60 * 1000) // every 14 minutes
+    
+    console.log(`♻️   Self-ping active → ${pingURL}`)
+  }
 });
