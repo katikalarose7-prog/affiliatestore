@@ -13,10 +13,14 @@ const productSchema = new mongoose.Schema({
   'Best Sellers',
   'Fashion',
   'Beauty',
+    'Kitchen',
   'Electronics',
   'Home',
   'Fitness',
   'Books',
+    'Gaming',
+  'Travel',
+
 ]
   },
   affiliateLink: { type: String, required: true },
