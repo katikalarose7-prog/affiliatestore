@@ -23,6 +23,13 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+function normalizeText(text = '') {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim()
+}
+
 // ── In-memory cache ────────────────────────────────────────────────
 // Layer 1: global.__productCache  — set at server startup (immediate)
 // Layer 2: local cache            — refreshed every 3 minutes
@@ -93,11 +100,25 @@ router.get('/', async (req, res) => {
     if (minRating) filter.rating = { $gte: parseFloat(minRating) };
     if (featured === 'true') filter.featured = true;
     if (search) {
-      filter.$or = [
-        { name:        { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
-    }
+
+  const normalizedSearch = normalizeText(search)
+
+  filter.$or = [
+
+    // Normal search
+    { name:        { $regex: search, $options: 'i' } },
+    { description: { $regex: search, $options: 'i' } },
+    { category:    { $regex: search, $options: 'i' } },
+    { tags:        { $regex: search, $options: 'i' } },
+
+    // Space-removed search
+    { name:        { $regex: normalizedSearch, $options: 'i' } },
+    { description: { $regex: normalizedSearch, $options: 'i' } },
+    { category:    { $regex: normalizedSearch, $options: 'i' } },
+    { tags:        { $regex: normalizedSearch, $options: 'i' } },
+
+  ];
+}
     if (tags) {
       const tagList = tags.split(',').map(t => t.trim());
       filter.tags = { $in: tagList };
@@ -207,7 +228,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     const { name, description, price, category, affiliateLink,
             rating, featured, audience, region, tags } = req.body;
 const image = req.file
-  ? `/uploads/${req.file.filename}`
+  ? req.file.path
   : ''
 
 const product = new Product({
@@ -260,8 +281,7 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
       region:   region   || 'all',
       tags:     tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
     };
-    if (req.file) updateData.image = `/uploads/${req.file.filename}`
-
+if (req.file) updateData.image = req.file.path
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
     cache.clear(); // invalidate cache on write
     res.json(product);
