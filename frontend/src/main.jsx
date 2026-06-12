@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast'
 import axios from 'axios'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
-import { ThemeProvider } from './context/ThemeContext.jsx'
+import { ThemeProvider } from './context/Themecontext.jsx'
 import './index.css'
 
 // ── Global axios defaults ─────────────────────────────────────────
