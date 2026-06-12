@@ -1,732 +1,285 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
+import { LayoutGrid, List, RotateCcw } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import ProductCard from '../components/ProductCard'
-import FilterSidebar from '../components/FilterSidebar'
 import BannerCarousel from '../components/BannerCarousel'
-import { SlidersHorizontal, Star, TrendingUp, Zap, ChevronDown, Shield, X } from 'lucide-react'
+import Footer from '../components/Footer'
 import { API } from '../config'
+import { getCategoriesForStore } from '../config/stores'
 
-const DEFAULT = { category:'All', minPrice:'', maxPrice:'', minRating:0, featured:false, audience:'all', region:'all' }
-
-const CATS = [
-  'All',
-  'Best Sellers',
-  'Fashion',
-  'Beauty',
-    'Kitchen',
-  'Electronics',
-  'Home',
-  'Fitness',
-  'Books',
-    'Gaming',
-  'Travel',
-]
-const CAT_META = {
-  All:           { icon:'🛍️', color:'#2563eb' },
-    'Best Sellers': { icon:'🔥', color:'#dc2626' },
-  Fashion:       { icon:'👗', color:'#ea580c' },
-  Beauty:        { icon:'💄', color:'#e11d48' },
-  Kitchen: { icon:'🍳', color:'#f97316' },
-  Electronics:   { icon:'⚡', color:'#0284c7' },
-  Home:          { icon:'🏠', color:'#0f766e' },
-  Fitness:       { icon:'💪', color:'#059669' },
-  Books:         { icon:'📚', color:'#6d28d9' },
-  Gaming:  { icon:'🎮', color:'#7c3aed' },
-Travel:  { icon:'✈️', color:'#0ea5e9' },
-}
-
-function PrivacyModal({ onClose }) {
-  const sections = [
-    ['1. Who We Are','PrimeOffers is an affiliate product discovery platform. We curate products from Amazon and other retailers and earn a small commission on purchases at no extra cost to you.'],
-    ['2. Affiliate Disclosure','This website participates in the Amazon Associates Program. We earn a small commission when you click a link and make a purchase. This does not affect the price you pay.'],
-    ['3. Information We Collect','We do not collect personal information from visitors. No registration is required to browse or purchase products. We do not store payment details.'],
-    ['4. Cookies & Analytics','We may use anonymous analytics tools to understand traffic. These may place cookies in your browser. You can disable cookies via browser settings at any time.'],
-    ['5. Third-Party Links','Our site links to Amazon and other third-party sites. Once you leave, their own privacy policies apply.'],
-    ['6. Security','Since we collect no personal data, there is minimal data risk. Our admin panel uses JWT authentication with token expiry.'],
-    ['7. Changes','This policy may be updated. Changes are reflected on this page with a new "Last updated" date.'],
-    ['8. Contact','Questions? Email us at privacy@primeoffers.in'],
-  ]
+/* ── Skeleton card ─────────────────────────────────── */
+function SkeletonCard() {
   return (
-    <div style={ps.overlay} onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={ps.box}>
-        <div style={ps.head}>
-          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-            <Shield size={16} color="var(--accent)"/>
-            <h2 style={{fontFamily:'var(--font-head)',fontSize:'17px',fontWeight:700,color:'var(--text)'}}>Privacy Policy</h2>
-          </div>
-          <button onClick={onClose} style={ps.close}><X size={16}/></button>
-        </div>
-        <div style={ps.body}>
-          <p style={{color:'var(--text3)',fontSize:'12px',marginBottom:'16px'}}>Last updated: June 2025</p>
-          {sections.map(([h,t]) => (
-            <div key={h} style={{marginBottom:'16px'}}>
-              <div style={{fontFamily:'var(--font-head)',fontWeight:600,fontSize:'14px',color:'var(--text)',marginBottom:'5px'}}>{h}</div>
-              <p style={{color:'var(--text2)',fontSize:'13px',lineHeight:1.65}}>{t}</p>
-            </div>
-          ))}
-        </div>
+    <div className="skel-card">
+      <div className="skeleton skel-img"/>
+      <div className="skel-body">
+        <div className="skeleton skel-line" style={{width:'55%'}}/>
+        <div className="skeleton skel-line" style={{width:'100%'}}/>
+        <div className="skeleton skel-line" style={{width:'80%'}}/>
+        <div className="skeleton skel-line" style={{width:'45%'}}/>
+        <div className="skeleton skel-line" style={{height:'34px',borderRadius:'8px'}}/>
       </div>
     </div>
   )
 }
 
+/* ── Defaults ──────────────────────────────────────── */
+const DEFAULT = {
+  category: 'All', audience: 'all', region: 'all',
+  minRating: 0, featured: false,
+}
+
+/* ── Home page ─────────────────────────────────────── */
 export default function Home() {
-  const [products, setProducts]       = useState([])
-  const [featured, setFeatured]       = useState([])
-  const [banners, setBanners]         = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [search, setSearch]           = useState('')
-  const [filters, setFilters]         = useState(DEFAULT)
-  const [showSidebar, setShowSidebar] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 900 : true)
-  const [showPrivacy, setShowPrivacy] = useState(false)
-  const [debounced, setDebounced]     = useState('')
+  const [products,    setProducts]    = useState([])
+  const [featured,    setFeatured]    = useState([])
+  const [banners,     setBanners]     = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [filters,     setFilters]     = useState(DEFAULT)
+  const [search,      setSearch]      = useState('')
+  const [debounced,   setDebounced]   = useState('')
+  const [activeStore, setActiveStore] = useState(() => {
+    try {
+      const saved = localStorage.getItem('bdp_store')
+      const valid = ['all','amazon','myntra','flipkart','ajio']
+      return valid.includes(saved) ? saved : 'all'
+    } catch { return 'all' }
+  })
+  // primary filter = tag string (e.g. 'bestseller', 'under499', etc.) or null
+  const [activeFilter,   setActiveFilter]   = useState(null)
+  // audience from row-3 tab (all / women / men / kids)
+  const [activeAudience, setActiveAudience] = useState('all')
+  const [sortBy,    setSortBy]    = useState('random')
+  const [viewMode,  setViewMode]  = useState('grid')
 
-  useEffect(() => { const t = setTimeout(() => setDebounced(search), 350); return () => clearTimeout(t) }, [search])
+ // const [showSidebar, setShowSidebar] = useState(
+ //   () => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
+  //)
 
-  // Fire banners + featured in parallel on first load
+  /* Debounce search */
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search), 320)
+    return () => clearTimeout(t)
+  }, [search])
+
+  /* Initial load */
   useEffect(() => {
     Promise.all([
-      axios.get(`${API}/banners`).catch(() => ({ data: [] })),
-      axios.get(`${API}/products?featured=true&limit=4`).catch(() => ({ data: [] })),
-    ]).then(([bannersRes, featuredRes]) => {
-      setBanners(bannersRes.data)
-      setFeatured(featuredRes.data)
-    })
+      axios.get(`${API}/banners`).catch(() => ({data:[]})),
+      axios.get(`${API}/products?featured=true&limit=8`).catch(() => ({data:[]})),
+    ]).then(([b, f]) => { setBanners(b.data); setFeatured(f.data) })
   }, [])
 
+  /* Products — wires all three rows together */
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const p = { limit: 40 }  // load 40 at a time — fast
-      if (filters.category !== 'All')                     p.category = filters.category
-      if (filters.minPrice)                               p.minPrice = filters.minPrice
-      if (filters.maxPrice)                               p.maxPrice = filters.maxPrice
-      if (filters.minRating > 0)                          p.minRating = filters.minRating
-      if (filters.featured)                               p.featured = true
-      if (filters.audience && filters.audience !== 'all') p.audience = filters.audience
-      if (filters.region   && filters.region   !== 'all') p.region   = filters.region
-      if (debounced)                                      p.search = debounced
+      const p = { limit: 40, sort: sortBy }
+
+      // Row 3 category sidebar filter
+      if (filters.category !== 'All') p.category  = filters.category
+      if (filters.region   !== 'all') p.region     = filters.region
+      if (filters.minRating > 0)      p.minRating  = filters.minRating
+      if (filters.featured)           p.featured   = true
+
+      // Row 1: store tab
+      if (activeStore !== 'all')      p.store      = activeStore
+
+      // Row 3: audience tab (Women / Men / Kids)
+      if (activeAudience !== 'all')   p.audience   = activeAudience
+
+      // Row 2: primary quick-filter (tag-based)
+      if (activeFilter)               p.tags       = activeFilter
+
+      // Search
+      if (debounced)                  p.search     = debounced
+
       const { data } = await axios.get(`${API}/products`, { params: p })
       setProducts(data)
-    } catch {}
+    } catch { setProducts([]) }
     finally { setLoading(false) }
-  }, [filters, debounced])
+  }, [filters, debounced, activeStore, activeFilter, activeAudience, sortBy])
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
-  const clearAll = () => { setFilters(DEFAULT); setSearch('') }
+  const clearFilters = () => {
+    setFilters(DEFAULT)
+    setSearch('')
+    setActiveFilter(null)
+    setActiveAudience('all')
+  }
 
-  const isSearching = debounced.trim().length > 0
-  const isFiltered  = filters.category !== 'All' || filters.minPrice || filters.maxPrice || filters.minRating > 0 || filters.featured || (filters.audience && filters.audience !== 'all') || (filters.region && filters.region !== 'all')
-  const showHero    = !isSearching && !isFiltered
-  const activeCount = [filters.category!=='All',filters.minPrice,filters.maxPrice,filters.minRating>0,filters.featured,filters.audience&&filters.audience!=='all',filters.region&&filters.region!=='all'].filter(Boolean).length
+  const handleStoreChange = s => {
+    setActiveStore(s)
+    setFilters(DEFAULT)
+    setSearch('')
+    setActiveFilter(null)
+    setActiveAudience('all')
+    try { localStorage.setItem('bdp_store', s) } catch {}
+  }
+
+  const handleFilterChange = tag => {
+    setActiveFilter(tag)
+    // Clear conflicting sidebar filters when a quick-filter is chosen
+    if (tag) setFilters(f => ({ ...f, featured: false }))
+  }
+
+  const handleAudienceChange = aud => {
+    setActiveAudience(aud)
+    setFilters(f => ({ ...f, audience: aud }))
+  }
+
+  const cats = getCategoriesForStore(activeStore)
+
+  const isFiltered = filters.category !== 'All' ||
+    filters.audience !== 'all' || filters.region !== 'all' ||
+    filters.minRating > 0 || filters.featured || !!debounced ||
+    !!activeFilter || activeAudience !== 'all'
+
+  const filterCount = [
+    filters.category !== 'All',
+    filters.audience !== 'all',
+    filters.region   !== 'all',
+    filters.minRating > 0,
+    filters.featured,
+    !!activeFilter,
+  ].filter(Boolean).length
+
+  const showFeatured = featured.length > 0 && !debounced &&
+    activeStore === 'all' && filters.category === 'All' &&
+    activeAudience === 'all' && !activeFilter
 
   return (
-    <div style={s.page}>
-      <style>{`
-        /* Category bar responsive */
-        @media(min-width:641px){
-          .cat-bar-mobile{display:none!important}
-          .cat-bar-desktop{display:flex!important}
-        }
-        @media(max-width:640px){
-          .cat-bar-desktop{display:none!important}
-          .cat-bar-mobile{display:block!important}
-        }
-        .cat-pill:hover{opacity:0.85}
-        .filter-toggle:hover{background:var(--bg3)!important}
-        .buy-now-link:hover{opacity:0.88;transform:translateY(-1px)}
-        @media(max-width:900px){
-          .layout-row{flex-direction:column!important}
-          .product-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))!important}
-          .featured-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))!important}
-          .hero-title{font-size:clamp(28px,7vw,52px)!important}
-          .stats-row{grid-template-columns:repeat(2,1fr)!important}
-        }
-        @media(max-width:480px){
-          .product-grid{grid-template-columns:repeat(2,1fr)!important}
-          .featured-grid{grid-template-columns:repeat(2,1fr)!important}
-        }
-          .top-nav-scroll::-webkit-scrollbar{
-  display:none;
-}
+    <div style={{minHeight:'100vh',background:'var(--bg)'}}>
 
+      {/* Navbar — all three rows wired */}
+      <Navbar
+        onSearch={setSearch}
+        searchValue={search}
+        activeStore={activeStore}
+        onStoreChange={handleStoreChange}
+        activeFilter={activeFilter}
+        onFilterChange={handleFilterChange}
+        activeAudience={activeAudience}
+        onAudienceChange={handleAudienceChange}
+      />
 
+      {/* Page content */}
+      <div className="page-wrap">
 
-.tooltip-wrap:hover .global-tooltip{
-  opacity:1;
-  visibility:visible;
-  transform:translateY(0);
-}
-
-
-  .category-scroll::-webkit-scrollbar{
-  display:none;
-}
-
-@media(max-width:768px){
-
-  .category-scroll{
-    gap:18px !important;
-    padding:0 14px !important;
-  }
-
-  .cat-nav-item{
-    font-size:13px !important;
-  }
-
-}
-.tooltip-wrap{
-  position:relative;
-  display:flex;
-  align-items:center;
-}
-
-/* invisible bridge so hover doesn't break */
-
-
-.global-tooltip{
-  position:absolute;
-
-  top:calc(100% + 10px);
-  left:50%;
-
-  transform:translateX(-50%) translateY(-4px);
-
-  width:210px;
-  padding:10px 12px;
-
-  border-radius:12px;
-  background:var(--card-bg);
-  border:1px solid var(--border);
-
-  color:var(--text2);
-  font-size:12px;
-  line-height:1.5;
-
-  box-shadow:0 12px 30px rgba(0,0,0,0.12);
-
-  opacity:0;
-  visibility:hidden;
-
-  transition:all .18s ease;
-
-  z-index:999999;
-
-  pointer-events:none;
-}
-  
-.tooltip-wrap:hover .global-tooltip{
-  opacity:1;
-  visibility:visible;
-  transform:translateX(-50%) translateY(0);
-}
-
-
-@media(max-width:768px){
-  .global-tooltip{
-    display:none;
-  }
-}
-
-      `}</style>
-
-      {/* ── Sticky top ── */}
-      <div style={s.stickyTop}>
-        <Navbar onSearch={setSearch} searchValue={search}/>
-
-        {/* Audience + Region quick tabs */}
-        {/* Audience + Region Nav */}
-<div style={s.topNav}>
-
-  {/* Audience */}
-  <div style={s.topNavGroup}>
-    {[
-      { val:'all', label:'All' },
-      { val:'women', label:'Women' },
-      { val:'men', label:'Men' },
-      { val:'kids', label:'Kids' },
-      { val:'unisex', label:'Unisex' },
-    ].map(item => {
-      const active = (filters.audience || 'all') === item.val
-
-      return (
-        <button
-          key={item.val}
-          onClick={() =>
-            setFilters(f => ({
-              ...f,
-              audience:item.val
-            }))
-          }
-          style={{
-            ...s.topNavItem,
-            ...(active ? s.topNavItemActive : {})
-          }}
-        >
-          {item.label}
-        </button>
-      )
-    })}
-  </div>
-
-  <div style={s.topNavDivider} />
-
-  {/* Region */}
-  <div style={s.topNavGroup}>
-    {[
-      { val:'all', label:'All Regions' },
-      { val:'india', label:'India' },
-      { val:'global', label:'Global' },
-    ].map(item => {
-      const active = (filters.region || 'all') === item.val
-
-      if(item.val === 'global'){
-        return (
-          <div
-            key={item.val}
-            className="tooltip-wrap"
-            style={{ position:'relative' }}
-          >
-            <button
-              onClick={() =>
-                setFilters(f => ({
-                  ...f,
-                  region:item.val
-                }))
-              }
-              style={{
-                ...s.topNavItem,
-                ...(active
-                  ? {
-                      ...s.topNavItemActive,
-                      borderBottom:'2px solid var(--indigo)',
-                    }
-                  : {})
-              }}
-            >
-              Global
-            </button>
-
-            <div className="global-tooltip">
-              For Amazon users outside India.
-            </div>
-          </div>
-        )
-      }
-
-      return (
-        <button
-          key={item.val}
-          onClick={() =>
-            setFilters(f => ({
-              ...f,
-              region:item.val
-            }))
-          }
-          style={{
-            ...s.topNavItem,
-            ...(active
-              ? {
-                  ...s.topNavItemActive,
-                  borderBottom:'2px solid var(--indigo)',
-                }
-              : {})
-          }}
-        >
-          {item.label}
-        </button>
-      )
-    })}
-  </div>
-
-</div>
-
-        {/* Category bar */}
-      {/* Category Navigation */}
-<div style={s.catBar}>
-  <div className="category-scroll" style={s.catNav}>
-
-    {CATS.map(cat => {
-      const m = CAT_META[cat]
-      const active = filters.category === cat
-
-      return (
-        <button
-          key={cat}
-          className="cat-nav-item"
-          onClick={() =>
-            setFilters(f => ({
-              ...f,
-              category:cat
-            }))
-          }
-          style={{
-            ...s.catNavItem,
-            ...(active
-              ? {
-                  ...s.catNavItemActive,
-                  borderBottom:`2px solid ${m.color}`,
-                  color:m.color,
-                }
-              : {})
-          }}
-        >
-          <span style={{ fontSize:'15px' }}>
-            {m.icon}
-          </span>
-
-          <span>
-            {cat}
-          </span>
-        </button>
-      )
-    })}
-
-  </div>
-</div>
-
-        {/* Context bar (search/filter active) */}
-        {(isSearching || isFiltered) && (
-          <div style={s.ctxBar}>
-            <div className="container" style={s.ctxInner}>
-              <div style={s.ctxLeft}>
-                <span style={{color:'var(--text2)',fontSize:'13px'}}>
-                  {isSearching
-                    ? <>Results for <strong style={{color:'var(--text)'}}>&ldquo;{debounced}&rdquo;</strong></>
-                    : <>Category: <strong style={{color:'var(--accent)'}}>{filters.category}</strong></>
-                  }
-                </span>
-                <span style={s.countPill}>
-                  {loading ? '…' : `${products.length} item${products.length!==1?'s':''}`}
-                </span>
-              </div>
-              <button onClick={clearAll} style={s.clearBtn}>Clear ×</button>
+        {/* Banner carousel */}
+        {banners.length > 0 && !debounced && !activeFilter && (
+          <div style={{paddingTop:'16px'}}>
+            <div className="carousel-wrap">
+              <BannerCarousel banners={banners}/>
             </div>
           </div>
         )}
+
+        {/* Featured strip */}
+        {showFeatured && (
+          <div style={{paddingTop:'24px'}}>
+            <div className="section-header">
+              <h2 className="section-title">⭐ Featured Picks</h2>
+            </div>
+            <div className="featured-grid">
+              {featured.map(p => <ProductCard key={p._id} product={p}/>)}
+            </div>
+          </div>
+        )}
+
+        {/* Active filter label */}
+        {activeFilter && (
+          <div style={{padding:'16px 0 4px', display:'flex', alignItems:'center', gap:8}}>
+            <span style={{fontSize:'13px', fontWeight:600, color:'var(--text2)'}}>
+              Showing: <strong style={{color:'var(--accent)'}}>{activeFilter}</strong>
+            </span>
+            <button onClick={() => setActiveFilter(null)}
+              style={{background:'none',border:'none',cursor:'pointer',fontSize:'13px',color:'var(--text3)'}}>
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Main layout */}
+       <div className="main-layout">
+
+  <div style={{ width: '100%' }}>
+
+    {/* Toolbar */}
+    <div className="toolbar">
+      <div className="toolbar-left">
+        {isFiltered && (
+          <button className="clear-btn" onClick={clearFilters}>
+            <RotateCcw size={11} /> Clear
+          </button>
+        )}
       </div>
 
-      {/* ── Hero ── */}
-      {showHero && (
-        <section style={s.hero}>
-          <div style={s.heroGlow}/>
-          <div style={s.heroGlow2}/>
-          <div className="container" style={s.heroContent}>
-            <div style={s.heroBadge}><Zap size={11}/> Best Prime Affiliate Deals</div>
-            <h1 className="hero-title" style={s.heroTitle}>
-              Discover Products<br/>
-              <span style={s.heroSpan}>You'll Actually Love</span>
-            </h1>
-            <p style={s.heroSub}>
-              Handpicked deals on Beauty, Electronics, Fashion &amp; more.
-              Browse by category or search above.
-            </p>
-            <div style={{display:'flex',alignItems:'center',gap:'5px',color:'var(--text4)',fontSize:'12px',marginTop:'4px'}}>
-              <ChevronDown size={12} style={{opacity:0.5}}/>
-              <span>Scroll to explore {products.length}+ curated products</span>
-            </div>
-          </div>
-        </section>
-      )}
+      <div className="toolbar-right">
+        <span className="item-count">
+          {loading ? '…' : `${products.length} items`}
+        </span>
 
-      {/* ── Banners ── */}
-      {showHero && banners.length > 0 && (
-        <div style={s.bannerWrap}>
-          <div className="container">
-            <BannerCarousel banners={banners}/>
-          </div>
-        </div>
-      )}
+        <select
+          className="sort-select"
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+        >
+          <option value="random">🔀 Shuffle</option>
+          <option value="latest">🆕 Newest</option>
+          <option value="rating">⭐ Top Rated</option>
+        </select>
 
-      {/* ── Featured ── */}
-      {showHero && featured.length > 0 && (
-        <section style={s.featuredSection}>
-          <div className="container">
-            <div style={s.secHead}>
-              <div>
-                <div style={s.secBadge}><Star size={10} strokeWidth={2.5}/> Featured</div>
-                <h2 style={s.secTitle}>Top Picks Right Now</h2>
-              </div>
-              <TrendingUp size={16} color="var(--accent)"/>
-            </div>
-            <div className="featured-grid" style={s.featGrid}>
-              {featured.slice(0,4).map((p,i) => <ProductCard key={p._id} product={p} index={i}/>)}
-            </div>
-          </div>
-        </section>
-      )}
+        <div className="view-toggle">
+          <button
+            className={`view-btn${viewMode === 'grid' ? ' active' : ''}`}
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid size={13} />
+          </button>
 
-      {/* ── All products ── */}
-      <div className="container" style={s.main}>
-        <div style={s.gridHead}>
-          <div>
-            <h2 style={s.gridTitle}>
-              {isSearching ? 'Search Results' : isFiltered ? filters.category : 'All Products'}
-            </h2>
-            {!loading && <p style={{color:'var(--text3)',fontSize:'12px',marginTop:'2px'}}>{products.length} items</p>}
-          </div>
-          <button className="filter-toggle"
-            onClick={() => setShowSidebar(v => !v)}
-            style={{...s.filterBtn, ...(activeCount>0 ? s.filterBtnActive : {})}}>
-            <SlidersHorizontal size={13}/>
-            Filters
-            {activeCount>0 && <span style={s.badge}>{activeCount}</span>}
+          <button
+            className={`view-btn${viewMode === 'list' ? ' active' : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            <List size={13} />
           </button>
         </div>
+      </div>
+    </div>
 
-        <div className="layout-row" style={s.layout}>
-          {/* Sidebar — handles its own mobile/desktop rendering */}
-          <FilterSidebar
-            filters={filters} onChange={setFilters}
-            onClear={clearAll}
-            visible={showSidebar}
-            onClose={() => setShowSidebar(false)}
-          />
+    {/* Products */}
+    {loading ? (
+      <div className={viewMode === 'grid' ? 'products-grid' : 'products-list'}>
+        {Array(8).fill(0).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    ) : products.length === 0 ? (
+      <div className="empty-state">
+        <div className="empty-icon">🔍</div>
+        <h3 className="empty-title">No products found</h3>
+        <p className="empty-sub">
+          {debounced
+            ? `No results for "${debounced}"`
+            : 'Try adjusting your search'}
+        </p>
+      </div>
+    ) : (
+      <div className={viewMode === 'grid' ? 'products-grid' : 'products-list'}>
+        {products.map(p => (
+          <ProductCard key={p._id} product={p} />
+        ))}
+      </div>
+    )}
+  </div>
 
-          {/* Grid */}
-          <div style={{flex:1,minWidth:0}}>
-            {loading ? (
-              <div className="product-grid" style={s.grid}>
-                {[...Array(8)].map((_,i) => (
-                  <div key={i} style={{background:'var(--card-bg)',borderRadius:'var(--radius-lg)',overflow:'hidden',border:'1px solid var(--border)'}}>
-                    <div className="skeleton" style={{height:'clamp(140px,20vw,200px)'}}/>
-                    <div style={{padding:'14px',display:'flex',flexDirection:'column',gap:'8px'}}>
-                      <div className="skeleton" style={{height:'13px',width:'72%',borderRadius:'4px'}}/>
-                      <div className="skeleton" style={{height:'11px',width:'50%',borderRadius:'4px'}}/>
-                      <div className="skeleton" style={{height:'34px',borderRadius:'8px',marginTop:'6px'}}/>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : products.length === 0 ? (
-              <div style={s.empty}>
-                <div style={{fontSize:'48px'}}>🔍</div>
-                <h3 style={{fontFamily:'var(--font-head)',fontSize:'18px',fontWeight:600,color:'var(--text)'}}>
-                  {isSearching ? `No results for "${debounced}"` : 'No products found'}
-                </h3>
-                <p style={{color:'var(--text2)',fontSize:'13px'}}>Try different keywords or clear filters</p>
-                <button onClick={clearAll} style={s.emptyCta}>Clear Everything</button>
-              </div>
-            ) : (
-              <div className="product-grid" style={s.grid}>
-                {products.map((p,i) => <ProductCard key={p._id} product={p} index={i}/>)}
-              </div>
-            )}
-          </div>
-        </div>
+</div>
       </div>
 
-      {/* ── Footer ── */}
-      <footer style={s.footer}>
-        <div className="container">
-          <div style={s.footerTop}>
-            <div>
-              <div style={s.footerLogo}>Prime<span style={{color:'var(--accent)'}}>Offers</span></div>
-              <p style={{color:'var(--text3)',fontSize:'12px',marginTop:'4px'}}>Handpicked affiliate deals you can trust.</p>
-            </div>
-            <div style={s.footerLinks}>
-              <button onClick={() => setShowPrivacy(true)} style={s.footerLink}>
-                <Shield size={12}/> Privacy Policy
-              </button>
-              <span style={{color:'var(--text4)'}}>·</span>
-              <a href="/admin/login" style={s.footerLink}>Admin</a>
-            </div>
-          </div>
-          <div style={s.footerBottom}>
-            <p style={{color:'var(--text3)',fontSize:'11px'}}>© {new Date().getFullYear()} PrimeOffers. All rights reserved.</p>
-            <p style={{color:'var(--text4)',fontSize:'11px',maxWidth:'380px',textAlign:'right',lineHeight:1.5}}>
-              Contains affiliate links. We may earn a commission on purchases.
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)}/>}
+      <Footer/>
     </div>
   )
-}
-
-const s = {
-  page:{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column'},
-stickyTop:{
-  position:'sticky',
-  top:0,
-  zIndex:1000,
-    overflow:'visible',
-
-},
-topNav:{
-  height:'52px',
-  display:'flex',
-  alignItems:'center',
-  gap:'18px',
-  padding:'0 clamp(14px,3vw,28px)',
-  background:'var(--bg)',
-  borderBottom:'1px solid var(--border)',
-
-   overflowX:'auto',
-  overflowY:'visible',
-
-  scrollbarWidth:'none',
-  WebkitOverflowScrolling:'touch',
-},
-
-topNavGroup:{
-  display:'flex',
-  alignItems:'center',
-  gap:'22px',
-  flexShrink:0,
-},
-
-topNavDivider:{
-  width:'1px',
-  height:'18px',
-  background:'var(--border)',
-  flexShrink:0,
-},
-
-topNavItem:{
-  height:'52px',
-  display:'flex',
-  alignItems:'center',
-  background:'transparent',
-  border:'none',
-  borderBottom:'2px solid transparent',
-  color:'var(--text2)',
-  fontSize:'14px',
-  fontWeight:500,
-  cursor:'pointer',
-  transition:'all .15s ease',
-  whiteSpace:'nowrap',
-  padding:'0',
-},
-
-topNavItemActive:{
-  color:'var(--text)',
-  fontWeight:700,
-  borderBottom:'2px solid var(--accent)',
-},
-
-globalTooltip:{
-  width:'210px',
-  padding:'10px 12px',
-  borderRadius:'12px',
-  background:'var(--card-bg)',
-  border:'1px solid var(--border)',
-  color:'var(--text2)',
-  fontSize:'12px',
-  lineHeight:'1.5',
-  boxShadow:'0 12px 30px rgba(0,0,0,0.12)',
-},
-
-  audBar:{background:'var(--bg)',borderBottom:'1px solid var(--border)',overflowX:'auto',scrollbarWidth:'none'},
-  audScroll:{display:'flex',alignItems:'center',gap:'5px',padding:'8px clamp(14px,3vw,28px)',width:'max-content',minWidth:'100%'},
-  audPill:{display:'flex',alignItems:'center',gap:'5px',padding:'5px 13px',borderRadius:'20px',background:'var(--bg2)',border:'1.5px solid var(--border)',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,transition:'all .15s',minHeight:'32px'},
-  catBar:{
-  background:'var(--cat-bg)',
-  borderBottom:'1px solid var(--cat-bdr)',
-  overflowX:'auto',
-},
-  // Desktop: wrapping pill row
-  catDesktop:{
-    display:'flex',flexWrap:'wrap',alignItems:'center',
-    gap:'5px',padding:'8px clamp(14px,3vw,28px)',
-  },
-  // Mobile: single dropdown row
-  catMobile:{
-    display:'none', // shown via CSS media query below
-    padding:'8px clamp(14px,3vw,20px)',
-  },
-  catSelectWrap:{
-    display:'flex',alignItems:'center',gap:'8px',
-    background:'var(--bg2)',border:'1.5px solid var(--border)',
-    borderRadius:'20px',padding:'6px 14px',width:'100%',maxWidth:'100%',
-    cursor:'pointer',
-  },
-  catSelect:{
-    flex:1,background:'transparent',border:'none',
-    color:'var(--text)',fontSize:'13px',fontWeight:500,
-    cursor:'pointer',outline:'none',
-    appearance:'none',WebkitAppearance:'none',
-  },
-  catNav:{
-  height:'54px',
-  display:'flex',
-  alignItems:'center',
-  gap:'24px',
-  padding:'0 clamp(14px,3vw,28px)',
-  width:'max-content',
-  minWidth:'100%',
-  scrollbarWidth:'none',
-  WebkitOverflowScrolling:'touch',
-},
-
-catNavItem:{
-  height:'54px',
-  display:'flex',
-  alignItems:'center',
-  gap:'7px',
-  background:'transparent',
-  border:'none',
-  borderBottom:'2px solid transparent',
-  color:'var(--text2)',
-  fontSize:'14px',
-  fontWeight:500,
-  cursor:'pointer',
-  whiteSpace:'nowrap',
-  transition:'all .15s ease',
-  padding:'0',
-  flexShrink:0,
-},
-
-catNavItemActive:{
-  color:'var(--text)',
-  fontWeight:700,
-},
-  catPill:{display:'flex',alignItems:'center',gap:'5px',padding:'5px 13px',borderRadius:'20px',background:'var(--bg2)',border:'1.5px solid var(--border)',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,transition:'all .15s',minHeight:'32px'},
-  ctxBar:{background:'var(--bg2)',borderBottom:'1px solid var(--border)',padding:'8px 0'},
-  ctxInner:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px'},
-  ctxLeft:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'},
-  countPill:{background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',color:'var(--accent)',padding:'2px 9px',borderRadius:'20px',fontSize:'11px',fontWeight:600},
-  clearBtn:{background:'none',color:'var(--hot)',border:'1px solid rgba(239,68,68,0.28)',borderRadius:'7px',padding:'4px 11px',fontSize:'11px',fontWeight:600,cursor:'pointer'},
-  hero:{position:'relative',overflow:'hidden',padding:'clamp(48px,8vw,88px) 0 clamp(36px,6vw,68px)',borderBottom:'1px solid var(--border)',background:'linear-gradient(180deg,var(--accent-bg) 0%,var(--bg) 100%)'},
-  heroGlow:{position:'absolute',top:0,left:'50%',transform:'translateX(-50%)',width:'600px',height:'280px',background:'radial-gradient(ellipse,rgba(37,99,235,0.12) 0%,transparent 70%)',pointerEvents:'none'},
-  heroGlow2:{position:'absolute',top:'20%',right:'-5%',width:'300px',height:'300px',borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,0.07) 0%,transparent 70%)',pointerEvents:'none'},
-  heroContent:{position:'relative',zIndex:1,textAlign:'center',maxWidth:'640px',margin:'0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:'clamp(12px,2vw,18px)'},
-  heroBadge:{display:'inline-flex',alignItems:'center',gap:'5px',background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',color:'var(--accent)',padding:'4px 14px',borderRadius:'20px',fontSize:'11px',fontWeight:600,letterSpacing:'0.3px'},
-  heroTitle:{fontFamily:'var(--font-head)',fontSize:'clamp(32px,5.5vw,64px)',fontWeight:800,lineHeight:1.1,letterSpacing:'-1.5px',color:'var(--text)'},
-  heroSpan:{color:'var(--accent)'},
-  heroSub:{color:'var(--text2)',fontSize:'clamp(13px,1.5vw,16px)',lineHeight:1.65,maxWidth:'480px'},
-  bannerWrap:{padding:'clamp(20px,4vw,36px) 0 0',background:'var(--bg)'},
-  featuredSection:{padding:'clamp(28px,5vw,48px) 0',background:'var(--bg2)',borderBottom:'1px solid var(--border)'},
-  secHead:{display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:'clamp(16px,2.5vw,24px)'},
-  secBadge:{display:'inline-flex',alignItems:'center',gap:'4px',background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.28)',color:'#b45309',padding:'3px 11px',borderRadius:'20px',fontSize:'10px',fontWeight:600,marginBottom:'7px',width:'fit-content'},
-  secTitle:{fontFamily:'var(--font-head)',fontWeight:700,fontSize:'clamp(18px,3vw,26px)',color:'var(--text)',letterSpacing:'-0.3px'},
-  featGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'clamp(12px,2vw,18px)'},
-  main:{padding:'clamp(20px,4vw,32px) clamp(14px,3vw,28px) clamp(40px,6vw,64px)',flex:1},
-  gridHead:{display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:'clamp(14px,2vw,20px)',paddingBottom:'14px',borderBottom:'1px solid var(--border)'},
-  gridTitle:{fontFamily:'var(--font-head)',fontWeight:700,fontSize:'clamp(16px,2.5vw,20px)',color:'var(--text)',letterSpacing:'-0.2px'},
-  filterBtn:{display:'flex',alignItems:'center',gap:'6px',padding:'7px 15px',borderRadius:'8px',background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',transition:'all .15s',minHeight:'36px'},
-  filterBtnActive:{background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',color:'var(--accent)'},
-  badge:{background:'var(--accent)',color:'#fff',width:'17px',height:'17px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px',fontWeight:700},
-  layout:{display:'flex',gap:'clamp(14px,2.5vw,22px)',alignItems:'flex-start'},
-  grid:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:'clamp(12px,2vw,18px)'},
-  empty:{display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',padding:'clamp(48px,8vw,80px) 16px',textAlign:'center'},
-  emptyCta:{marginTop:'6px',padding:'9px 22px',borderRadius:'9px',background:'var(--accent)',color:'#fff',fontSize:'13px',fontWeight:600,boxShadow:'0 3px 12px rgba(37,99,235,0.28)',border:'none',cursor:'pointer'},
-  footer:{background:'var(--bg2)',borderTop:'1px solid var(--border)',padding:'clamp(22px,4vw,36px) 0 clamp(16px,3vw,26px)',marginTop:'auto'},
-  footerTop:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:'16px',marginBottom:'clamp(14px,2vw,20px)',paddingBottom:'clamp(14px,2vw,20px)',borderBottom:'1px solid var(--border)'},
-  footerLogo:{fontFamily:'var(--font-head)',fontWeight:700,fontSize:'clamp(16px,2.5vw,20px)',color:'var(--text)'},
-  footerLinks:{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'},
-  footerLink:{display:'flex',alignItems:'center',gap:'4px',background:'none',color:'var(--text2)',fontSize:'12px',fontWeight:500,cursor:'pointer',border:'none',padding:0,transition:'color .15s'},
-  footerBottom:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'},
-}
-
-const ps = {
-  overlay:{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.52)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'},
-  box:{background:'var(--card-bg)',border:'1px solid var(--border)',borderRadius:'var(--radius-xl)',width:'100%',maxWidth:'580px',maxHeight:'85vh',display:'flex',flexDirection:'column',boxShadow:'var(--shadow-lg)',animation:'fadeUp .3s cubic-bezier(.22,1,.36,1)'},
-  head:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 22px',borderBottom:'1px solid var(--border)',flexShrink:0},
-  close:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'7px',padding:'5px',display:'flex',color:'var(--text2)',cursor:'pointer'},
-  body:{overflowY:'auto',padding:'20px 22px'},
 }

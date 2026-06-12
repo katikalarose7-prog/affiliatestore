@@ -1,766 +1,674 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
-import toast from 'react-hot-toast'
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/Themecontext'
-import { useNavigate, Link } from 'react-router-dom'
-import StarRating from '../components/StarRating'
 import {
-  Plus, Pencil, Trash2, X, Upload, ShoppingBag,
-  LogOut, Home, Search, ToggleLeft, ToggleRight,
-  ImageIcon, Sun, Moon, Package, Star, Tag, BarChart2,
-  Image, Eye, EyeOff, Menu
+  Plus, Pencil, Trash2, X, Search, Package,
+  BarChart3, LogOut, Star, Upload, Home,
+  AlertCircle, CheckCircle, RefreshCw, ChevronLeft
 } from 'lucide-react'
-import { API, STATIC } from '../config'
+import { API, SITE_NAME } from '../config'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import { getCategoriesForStore } from '../config/stores'
 
-const CATS = [
-  'All',
-    'Best Sellers',
-  'Fashion',
-  'Beauty',
-    'Kitchen',
-  'Electronics',
-  'Home',
-  'Fitness',
-  'Books',
-    'Gaming',
-  'Travel',
-];
-const EMPTY = { name:'', description:'', price:'', category:'Electronics', affiliateLink:'', rating:'4', featured:false, audience:'all', region:'all', tags:'' }
-const EMPTY_BANNER = { title:'', subtitle:'', badge:'', ctaText:'Shop Now', ctaLink:'', bgColor:'#1e3a8a', bgColor2:'#4338ca', accentColor:'#fbbf24', active:true, order:0 }
+const STORES    = ['all','amazon','myntra','flipkart','ajio']
+const AUDIENCES = ['all','men','women','kids','unisex']
+const REGIONS   = ['all','india','global']
 
-export default function Admin() {
-  const { token, adminUser, logout } = useAuth()
-  const { isDark, toggle }           = useTheme()
-  const navigate = useNavigate()
+const TAG_OPTIONS = [
+  { value:'bestseller',  label:'🔥 Best Seller'  },
+  { value:'under199',    label:'💰 Under ₹199'   },
+  { value:'under499',    label:'🏷️ Under ₹499'  },
+  { value:'under999',    label:'🎯 Under ₹999'   },
+  { value:'trending',    label:'📈 Trending'      },
+  { value:'newarrival',  label:'🆕 New Arrival'  },
+  { value:'toprated',    label:'⭐ Top Rated'     },
+  { value:'editorspick', label:"✨ Editor's Pick" },
+]
 
-  const [activeTab, setActiveTab]   = useState('products')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  // Products
-  const [products, setProducts] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [modalOpen, setModal]   = useState(false)
-  const [editing, setEditing]   = useState(null)
-  const [form, setForm]         = useState(EMPTY)
-  const [imgFile, setImgFile]   = useState(null)
-  const [imgPrev, setImgPrev]   = useState('')
-  const [saving, setSaving]     = useState(false)
-  const [deleteId, setDeleteId] = useState(null)
-  const fileRef = useRef()
-
-  // Banners
-  const [banners, setBanners]               = useState([])
-  const [bannerLoading, setBannerLoading]   = useState(true)
-  const [bannerModal, setBannerModal]       = useState(false)
-  const [editingBanner, setEditingBanner]   = useState(null)
-  const [bannerForm, setBannerForm]         = useState(EMPTY_BANNER)
-  const [bannerImgFile, setBannerImgFile]   = useState(null)
-  const [bannerImgPrev, setBannerImgPrev]   = useState('')
-  const [bannerSaving, setBannerSaving]     = useState(false)
-  const [deleteBannerId, setDeleteBannerId] = useState(null)
-  const bannerFileRef = useRef()
-
-  //csv
-  const [importMode, setImportMode] = useState('upsert')
-const csvRef = useRef()
-
-  const hdrs = { Authorization: `Bearer ${token}` }
-
-  const fetchProducts = async () => {
-    setLoading(true)
-    try { const { data } = await axios.get(`${API}/products?sort=latest`); setProducts(data) }
-    catch { toast.error('Failed to load products') }
-    finally { setLoading(false) }
-  }
-  const fetchBanners = async () => {
-    setBannerLoading(true)
-    try { const { data } = await axios.get(`${API}/banners?all=true`); setBanners(data) }
-    catch { toast.error('Failed to load banners') }
-    finally { setBannerLoading(false) }
-  }
-  useEffect(() => { fetchProducts(); fetchBanners() }, [])
-
-  // Product handlers
-  const openAdd  = () => { setEditing(null); setForm(EMPTY); setImgFile(null); setImgPrev(''); setModal(true) }
-  const openEdit = p  => {
-    setEditing(p)
-setForm({
-  name: p.name,
-  description: p.description,
-  price: String(p.price),
-  category: p.category,
-  affiliateLink: p.affiliateLink,
-  rating: String(p.rating),
-  featured: p.featured,
-  audience: p.audience || 'all',
-  region: p.region || 'all',
-  tags: p.tags?.join(', ') || ''
-})
-    setImgFile(null); setImgPrev(
-  p.image
-    ? p.image : ''
-); setModal(true)
-  }
-  const closeModal  = () => { setModal(false); setEditing(null); setImgFile(null); setImgPrev('') }
-  const handleImage = e => {
-    const f = e.target.files[0]; if (!f) return
-    if (f.size > 5*1024*1024) { toast.error('Max 5MB'); return }
-    setImgFile(f); setImgPrev(URL.createObjectURL(f))
-  }
-  const handleSubmit = async e => {
-    e.preventDefault(); setSaving(true)
-    try {
-      const fd = new FormData()
-      Object.entries(form).forEach(([k,v]) => fd.append(k,v))
-      if (imgFile) fd.append('image', imgFile)
-      if (editing) { await axios.put(`${API}/products/${editing._id}`, fd, { headers:hdrs }); toast.success('Updated!') }
-      else         { await axios.post(`${API}/products`, fd, { headers:hdrs }); toast.success('Added!') }
-      closeModal(); fetchProducts()
-    } catch (err) { toast.error(err.response?.data?.message || 'Save failed') }
-    finally { setSaving(false) }
-  }
-  const handleDelete = async id => {
-    try { await axios.delete(`${API}/products/${id}`, { headers:hdrs }); toast.success('Deleted'); setDeleteId(null); fetchProducts() }
-    catch { toast.error('Delete failed') }
-  }
-
-  // Banner handlers
-  const openAddBanner  = () => { setEditingBanner(null); setBannerForm(EMPTY_BANNER); setBannerImgFile(null); setBannerImgPrev(''); setBannerModal(true) }
-  const openEditBanner = b  => {
-    setEditingBanner(b)
-    setBannerForm({ title:b.title, subtitle:b.subtitle, badge:b.badge, ctaText:b.ctaText, ctaLink:b.ctaLink, bgColor:b.bgColor, bgColor2:b.bgColor2, accentColor:b.accentColor, active:b.active, order:b.order })
-setBannerImgFile(null); 
-setBannerImgPrev(b.image || ''); 
-setBannerModal(true)  }
-  const closeBannerModal = () => { setBannerModal(false); setEditingBanner(null); setBannerImgFile(null); setBannerImgPrev('') }
-  const handleBannerImg  = e => {
-    const f = e.target.files[0]; if (!f) return
-    if (f.size > 8*1024*1024) { toast.error('Max 8MB'); return }
-    setBannerImgFile(f); setBannerImgPrev(URL.createObjectURL(f))
-  }
-  const handleBannerSubmit = async e => {
-    e.preventDefault(); setBannerSaving(true)
-    try {
-      const fd = new FormData()
-      Object.entries(bannerForm).forEach(([k,v]) => fd.append(k,v))
-      if (bannerImgFile) fd.append('image', bannerImgFile)
-      if (editingBanner) { await axios.put(`${API}/banners/${editingBanner._id}`, fd, { headers:hdrs }); toast.success('Banner updated!') }
-      else               { await axios.post(`${API}/banners`, fd, { headers:hdrs }); toast.success('Banner created!') }
-      closeBannerModal(); fetchBanners()
-    } catch (err) { toast.error(err.response?.data?.message || 'Save failed') }
-    finally { setBannerSaving(false) }
-  }
-  const handleDeleteBanner = async id => {
-    try { await axios.delete(`${API}/banners/${id}`, { headers:hdrs }); toast.success('Deleted'); setDeleteBannerId(null); fetchBanners() }
-    catch { toast.error('Delete failed') }
-  }
-  const toggleActive = async b => {
-    try {
-      const fd = new FormData()
-      Object.entries({ title:b.title, subtitle:b.subtitle, badge:b.badge, ctaText:b.ctaText, ctaLink:b.ctaLink, bgColor:b.bgColor, bgColor2:b.bgColor2, accentColor:b.accentColor, order:b.order, active:!b.active }).forEach(([k,v]) => fd.append(k,v))
-      await axios.put(`${API}/banners/${b._id}`, fd, { headers:hdrs }); fetchBanners()
-    } catch { toast.error('Failed') }
-  }
-
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
-  )
-
-//csv
-const handleCsvImport = async e => {
-
-  const file = e.target.files[0]
-
-  if (!file) return
-
-  const fd = new FormData()
-
-  fd.append('file', file)
-  fd.append('mode', importMode)
-
-  try {
-
-    const { data } = await axios.post(
-      `${API}/products/import`,
-      fd,
-      {
-        headers: {
-          ...hdrs,
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    )
-
-    toast.success(
-      `Created: ${data.created}, Updated: ${data.updated}, Skipped: ${data.skipped}`
-    )
-
-    fetchProducts()
-
-  } catch (err) {
-
-    toast.error(
-      err.response?.data?.message || 'Import failed'
-    )
-  }
-
-  e.target.value = ''
+const EMPTY_FORM = {
+  name:'', description:'', category:'', affiliateLink:'',
+  rating:'', featured:false, audience:'all', region:'all', store:'all', tags:[],
+  _imagePreview:'',
 }
 
-  const stats = [
-    { icon:<Package size={17}/>, label:'Products', value:products.length,                                                                  color:'#2563eb' },
-    { icon:<Star    size={17}/>, label:'Featured', value:products.filter(p=>p.featured).length,                                           color:'#f59e0b' },
-    { icon:<BarChart2 size={17}/>,label:'Avg Rating',value:products.length?(products.reduce((a,p)=>a+p.rating,0)/products.length).toFixed(1):'0',color:'#10b981' },
-    { icon:<Tag     size={17}/>, label:'Categories',value:[...new Set(products.map(p=>p.category))].length,                               color:'#8b5cf6' },
-  ]
+/* ── Toast ──────────────────────────────────────────── */
+function Toast({ msg, type, onClose }) {
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t) }, [onClose])
+  if (!msg) return null
+  return (
+    <div className="admin-toast">
+      {type==='error'
+        ? <AlertCircle size={16} color="#ef4444"/>
+        : <CheckCircle size={16} color="#10b981"/>}
+      <span style={{fontSize:13,color:type==='error'?'#991b1b':'#065f46',flex:1}}>{msg}</span>
+      <button onClick={onClose}
+        style={{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',display:'flex',alignItems:'center',minWidth:28,minHeight:28,justifyContent:'center'}}>
+        <X size={14}/>
+      </button>
+    </div>
+  )
+}
 
-  const goTab = tab => { setActiveTab(tab); setSidebarOpen(false) }
+/* ── Confirm modal ──────────────────────────────────── */
+function ConfirmModal({ msg, onConfirm, onCancel }) {
+  return (
+    <div className="admin-drawer-overlay" onClick={onCancel}>
+      <div style={{
+        position:'fixed',left:'50%',top:'50%',transform:'translate(-50%,-50%)',
+        background:'var(--card)',border:'1px solid var(--border)',
+        borderRadius:16,padding:28,maxWidth:340,width:'90vw',
+        boxShadow:'0 20px 60px rgba(0,0,0,.3)',zIndex:1002,
+        animation:'popIn .25s cubic-bezier(.22,1,.36,1)',
+      }} onClick={e=>e.stopPropagation()}>
+        <h3 style={{margin:'0 0 10px',fontSize:16,fontWeight:700,color:'var(--text)'}}>Confirm Delete</h3>
+        <p style={{margin:'0 0 20px',fontSize:13,color:'var(--text2)',lineHeight:1.6}}>{msg}</p>
+        <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+          <button onClick={onCancel}
+            style={{padding:'10px 16px',borderRadius:10,border:'1px solid var(--border)',background:'transparent',cursor:'pointer',fontSize:14,color:'var(--text)',fontFamily:'inherit',minHeight:44}}>
+            Cancel
+          </button>
+          <button onClick={onConfirm}
+            style={{padding:'10px 16px',borderRadius:10,border:'none',background:'#ef4444',color:'#fff',cursor:'pointer',fontSize:14,fontWeight:600,fontFamily:'inherit',minHeight:44}}>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Product Drawer — side on desktop, bottom sheet on mobile ── */
+function ProductDrawer({ editId, initialForm, onClose, onSaved, token }) {
+  const [form,         setForm]         = useState(initialForm)
+  const [imageFile,    setImageFile]    = useState(null)
+  const [imagePreview, setImagePreview] = useState(initialForm._imagePreview || '')
+  const [saving,       setSaving]       = useState(false)
+  const fileRef = useRef()
+  const cats = getCategoriesForStore(form.store)
+  const authHeader = { Authorization:`Bearer ${token}` }
+
+  const toggleTag = tag => setForm(f => ({
+    ...f, tags: f.tags.includes(tag) ? f.tags.filter(t=>t!==tag) : [...f.tags, tag]
+  }))
+
+  const handleImageChange = e => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5*1024*1024) { alert('Image must be under 5 MB'); return }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const handleSubmit = async () => {
+    if (!form.name?.trim())         { alert('Product name is required');   return }
+    if (!form.category)             { alert('Category is required');       return }
+    if (!form.affiliateLink?.trim()){ alert('Affiliate link is required'); return }
+    setSaving(true)
+    try {
+      const fd = new FormData()
+      Object.entries(form).forEach(([k,v]) => {
+        if (k==='tags')            fd.append('tags', v.join(','))
+        else if (k!=='_imagePreview') fd.append(k, v)
+      })
+      if (imageFile) fd.append('image', imageFile)
+      const headers = { ...authHeader, 'Content-Type':'multipart/form-data' }
+      if (editId) await axios.put(`${API}/products/${editId}`, fd, { headers })
+      else        await axios.post(`${API}/products`, fd, { headers })
+      onSaved(editId ? 'Product updated ✓' : 'Product added ✓')
+    } catch(e) {
+      alert(e.response?.data?.message || 'Failed to save. Please try again.')
+    } finally { setSaving(false) }
+  }
 
   return (
-    <div style={s.page}>
-      <style>{`
-        @media(max-width:768px){.admin-mobile-top{display:flex!important}
-          .admin-sidebar{transform:translateX(-100%)!important;z-index:200!important;transition:transform .28s cubic-bezier(.22,1,.36,1)!important}
-          .admin-sidebar.open{transform:translateX(0)!important}
-          .admin-overlay{display:block!important}
-          .admin-main{padding:16px!important}
-          .stats-grid{grid-template-columns:repeat(2,1fr)!important}
-          .admin-table-wrap{overflow-x:auto!important}
-          .form-grid{grid-template-columns:1fr!important}
-          .banner-grid{grid-template-columns:1fr!important}
-        }
-        .nav-btn:hover{background:var(--bg3)!important;color:var(--text)!important}
-        .nav-btn-active{background:var(--accent-bg)!important;border:1px solid var(--accent-bdr)!important;color:var(--accent)!important}
-        .tbl-row:hover{background:var(--bg2)!important}
-        .action-btn:hover{opacity:0.8;transform:scale(1.08)}
-      `}</style>
+    <>
+      <div className="admin-drawer-overlay" onClick={onClose}/>
+      <div className="admin-drawer">
+        {/* Drag handle — only visible on mobile bottom sheet */}
+        <div className="admin-drawer-handle"/>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && <div className="admin-overlay" style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.42)',zIndex:199,backdropFilter:'blur(2px)'}} onClick={() => setSidebarOpen(false)}/>}
-
-      {/* ── Sidebar ── */}
-      <aside className={`admin-sidebar${sidebarOpen?' open':''}`} style={s.sidebar}>
-        <div style={s.sideTop}>
-          <div style={s.sideLogo}><ShoppingBag size={15} color="#fff"/></div>
-          <span style={s.sideLogoText}>Prime<span style={{color:'var(--accent)'}}>Offers</span></span>
+        <div className="admin-drawer-header">
+          <button className="admin-drawer-close" onClick={onClose} aria-label="Close">
+            <ChevronLeft size={20}/>
+          </button>
+          <h2 className="admin-drawer-title">{editId ? 'Edit Product' : 'Add Product'}</h2>
+          <div style={{width:40}}/>
         </div>
 
-        <nav style={s.nav}>
-          {[{id:'products',icon:<Package size={14}/>,label:'Products'},{id:'banners',icon:<Image size={14}/>,label:'Banners'}].map(({id,icon,label}) => (
-            <button key={id} className={`nav-btn${activeTab===id?' nav-btn-active':''}`}
-              onClick={() => goTab(id)}
-              style={s.navBtn}>
-              {icon} {label}
-            </button>
-          ))}
-        </nav>
+        <div className="admin-drawer-body">
 
-        <div style={s.sideFooter}>
-          <div style={s.adminRow}>
-            <div style={s.avatar}>{adminUser?.[0]?.toUpperCase()}</div>
-            <div style={{minWidth:0}}>
-              <div style={{fontWeight:600,fontSize:'12px',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{adminUser}</div>
-              <div style={{color:'var(--text3)',fontSize:'10px'}}>Administrator</div>
+          {/* ── Store ── */}
+          <label className="form-label">Store</label>
+          <select className="form-input form-select" value={form.store}
+            onChange={e=>setForm(f=>({...f, store:e.target.value, category:''}))}>
+            {STORES.map(s=>(
+              <option key={s} value={s}>
+                {s==='all' ? 'All Stores' : s.charAt(0).toUpperCase()+s.slice(1)}
+              </option>
+            ))}
+          </select>
+
+          {/* ── Name ── */}
+          <label className="form-label">Product Name *</label>
+          <input className="form-input"
+            placeholder="Enter product name"
+            autoCapitalize="words"
+            value={form.name}
+            onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+
+          {/* ── Description ── */}
+          <label className="form-label">Description</label>
+          <textarea className="form-input form-textarea"
+            placeholder="Brief product description"
+            value={form.description}
+            onChange={e=>setForm(f=>({...f,description:e.target.value}))}/>
+
+          {/* ── Category ── */}
+          <label className="form-label">Category *</label>
+          <select className="form-input form-select" value={form.category}
+            onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+            <option value="">Select a category</option>
+            {cats.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+
+          {/* ── Affiliate link ── */}
+          <label className="form-label">Affiliate Link *</label>
+          <input className="form-input"
+            placeholder="https://amzn.to/..."
+            inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            value={form.affiliateLink}
+            onChange={e=>setForm(f=>({...f,affiliateLink:e.target.value}))}/>
+
+          {/* ── Audience + Region ── */}
+          <div className="form-row">
+            <div>
+              <label className="form-label">Audience</label>
+              <select className="form-input form-select" value={form.audience}
+                onChange={e=>setForm(f=>({...f,audience:e.target.value}))}>
+                {AUDIENCES.map(a=>(
+                  <option key={a} value={a}>{a.charAt(0).toUpperCase()+a.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="form-label">Region</label>
+              <select className="form-input form-select" value={form.region}
+                onChange={e=>setForm(f=>({...f,region:e.target.value}))}>
+                {REGIONS.map(r=>(
+                  <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>
+                ))}
+              </select>
             </div>
           </div>
-          <div style={{display:'flex',gap:'5px',marginTop:'10px',flexWrap:'wrap'}}>
-            <Link to="/"  style={s.sideBtn}><Home size={12}/> Store</Link>
-            <button onClick={toggle}   style={s.sideBtn}>{isDark?<Sun size={12} color="#f59e0b"/>:<Moon size={12} color="#2563eb"/>}</button>
-            <button onClick={() => {logout();navigate('/')}} style={{...s.sideBtn,color:'var(--hot)'}}><LogOut size={12}/></button>
+
+          {/* ── Rating + Featured ── */}
+          <div className="form-row">
+            <div>
+              <label className="form-label">Rating (0–5)</label>
+              <input className="form-input"
+                type="number" min="0" max="5" step="0.1"
+                inputMode="decimal" placeholder="4.2"
+                value={form.rating}
+                onChange={e=>setForm(f=>({...f,rating:e.target.value}))}/>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',justifyContent:'flex-end',paddingBottom:2}}>
+              <label style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer',userSelect:'none',minHeight:44,paddingTop:16}}>
+                <input type="checkbox"
+                  checked={form.featured}
+                  onChange={e=>setForm(f=>({...f,featured:e.target.checked}))}
+                  style={{width:20,height:20,accentColor:'var(--accent)',cursor:'pointer',flexShrink:0}}/>
+                <span style={{fontSize:14,color:'var(--text)',fontWeight:500}}>Featured</span>
+              </label>
+            </div>
           </div>
-        </div>
-      </aside>
 
-      {/* ── Main ── */}
-      <main className="admin-main" style={s.main}>
+          {/* ── Quick-filter tags ── */}
+          <label className="form-label">Quick-Filter Tags</label>
+          <p style={{fontSize:11,color:'var(--text3)',margin:'2px 0 8px',lineHeight:1.5}}>
+            Tags control which Homepage filter row the product appears under.
+          </p>
+          <div className="tag-grid">
+            {TAG_OPTIONS.map(t=>(
+              <button key={t.value} type="button"
+                className={`tag-option${form.tags.includes(t.value)?' active':''}`}
+                onClick={()=>toggleTag(t.value)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Mobile topbar */}
-        <div className="admin-mobile-top" style={s.mobileTop}>
-          <button onClick={() => setSidebarOpen(true)} style={s.menuBtn}><Menu size={18}/></button>
-          <span style={{fontFamily:'var(--font-head)',fontWeight:700,fontSize:'16px',color:'var(--text)'}}>
-            {activeTab === 'products' ? 'Products' : 'Banners'}
-          </span>
-          <div style={{width:'36px'}}/>
-        </div>
-
-        {/* ════ PRODUCTS ════ */}
-        {activeTab === 'products' && (
-          <div>
-            <div style={s.topBar}>
-              <div>
-                <h1 style={s.pageTitle}>Products</h1>
-                <p style={s.pageSub}>Manage your affiliate product catalog</p>
-              </div>
-<div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-
-  <select
-    value={importMode}
-    onChange={e => setImportMode(e.target.value)}
-    style={{
-      ...s.searchInput,
-      width:'220px',
-      minHeight:'38px'
-    }}
-  >
-    <option value="upsert">
-      Add + Update Existing
-    </option>
-
-    <option value="new">
-      Add New Only
-    </option>
-
-    <option value="update">
-      Update Existing Only
-    </option>
-  </select>
-
-  <button
-    onClick={() => csvRef.current.click()}
-    style={s.secondaryBtn}
-  >
-    <Upload size={14}/>
-    Upload CSV
-  </button>
-
-  <button onClick={openAdd} style={s.addBtn}>
-    <Plus size={14}/> Add Product
-  </button>
-
-</div>            </div>
-
-            <div className="stats-grid" style={s.statsGrid}>
-              {stats.map(st => (
-                <div key={st.label} style={s.statCard}>
-                  <div style={{...s.statIcon,background:`${st.color}14`,color:st.color}}>{st.icon}</div>
-                  <div>
-                    <div style={s.statVal}>{st.value}</div>
-                    <div style={s.statLabel}>{st.label}</div>
-                  </div>
-                </div>
-              ))}
+          {/* ── Image upload ── */}
+          <label className="form-label">Product Image</label>
+          <p style={{fontSize:11,color:'var(--text3)',margin:'2px 0 8px',lineHeight:1.5}}>
+            Image is uploaded to Cloudinary automatically.
+          </p>
+          {imagePreview ? (
+            <div className="upload-preview">
+              <img src={imagePreview} alt="preview" style={{width:100,height:100,objectFit:'cover',borderRadius:8,display:'block'}}/>
+              <button className="upload-preview-remove"
+                onClick={()=>{setImageFile(null);setImagePreview('')}}
+                aria-label="Remove image">
+                <X size={12}/>
+              </button>
             </div>
-
-            <div style={s.searchRow}>
-              <div style={s.searchWrap}>
-                <Search size={13} style={{position:'absolute',left:'11px',color:'var(--text3)',pointerEvents:'none'}}/>
-                <input style={s.searchInput} placeholder="Search products…" value={search} onChange={e=>setSearch(e.target.value)}/>
+          ) : (
+            <div className="upload-zone" onClick={()=>fileRef.current?.click()}>
+              <Upload size={22} style={{margin:'0 auto 8px',opacity:.4,display:'block'}}/>
+              <div style={{fontSize:13,color:'var(--text2)',fontWeight:500}}>Tap to upload photo</div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>
+                On mobile, you can take a photo directly 📷
               </div>
             </div>
+          )}
+          {/* capture="environment" = rear camera on mobile */}
+          <input ref={fileRef} type="file" accept="image/*"
+            capture="environment" style={{display:'none'}}
+            onChange={handleImageChange}/>
 
-            <div className="admin-table-wrap" style={s.tableWrap}>
-              {loading ? (
-                <div style={{display:'flex',justifyContent:'center',padding:'50px'}}><div className="spinner"/></div>
-              ) : filtered.length === 0 ? (
-                <div style={s.empty}>
-                  <Package size={36} color="var(--text3)"/>
-                  <p style={{color:'var(--text2)',fontSize:'14px'}}>No products. <button onClick={openAdd} style={{color:'var(--accent)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Add one!</button></p>
-                </div>
-              ) : (
-                <table style={s.table}>
-                  <thead><tr style={s.thead}>
-                    {['Product','Category','Rating','Featured','Actions'].map(h=><th key={h} style={s.th}>{h}</th>)}
-                  </tr></thead>
-                  <tbody>
-                    {filtered.map(p => (
-                      <tr key={p._id} className="tbl-row" style={s.tr}>
-                        <td style={s.td}>
-                          <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                            <div style={s.thumb}>
-                              {p.image ? <img
- src={
-  p.image?.startsWith('http') || p.image?.startsWith('https://')
+          <div style={{height:24}}/>
+        </div>
 
-    ? p.image
-    : `${STATIC}${p.image}`
+        <div className="admin-drawer-footer">
+          <button className="drawer-cancel-btn" onClick={onClose}>Cancel</button>
+          <button className="drawer-save-btn" onClick={handleSubmit} disabled={saving}>
+            {saving
+              ? <span style={{display:'flex',alignItems:'center',gap:8,justifyContent:'center'}}>
+                  <span style={{width:16,height:16,border:'2px solid rgba(255,255,255,.4)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/>
+                  Saving…
+                </span>
+              : editId ? 'Save Changes' : 'Add Product'}
+          </button>
+        </div>
+      </div>
+    </>
+  )
 }
-  alt={p.name}
-  style={s.thumbImg}
-/> : <ImageIcon size={14} color="var(--text3)"/>}
-                            </div>
-                            <div style={{minWidth:0}}>
-                              <div style={{fontWeight:500,fontSize:'13px',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'180px'}}>{p.name}</div>
-                              <div style={{color:'var(--text3)',fontSize:'11px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'180px'}}>{p.description.slice(0,45)}…</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={s.td}><span style={s.catChip}>{p.category}</span></td>
-                        <td style={s.td}><StarRating rating={p.rating} size={11}/></td>
-                        <td style={s.td}>{p.featured?<span style={s.yes}>★ Yes</span>:<span style={s.no}>No</span>}</td>
-                        <td style={s.td}>
-                          <div style={{display:'flex',gap:'5px'}}>
-                            <button className="action-btn" onClick={()=>openEdit(p)} style={s.editBtn} title="Edit"><Pencil size={12}/></button>
-                            <button className="action-btn" onClick={()=>setDeleteId(p._id)} style={s.delBtn} title="Delete"><Trash2 size={12}/></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+
+/* ── Stat card ──────────────────────────────────────── */
+function StatCard({ title, value, items, icon }) {
+  return (
+    <div style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:12,padding:20}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+        <span style={{fontSize:20}}>{icon}</span>
+        <h3 style={{margin:0,fontSize:14,fontWeight:700,color:'var(--text)'}}>{title}</h3>
+      </div>
+      {value!==undefined && <div style={{fontSize:36,fontWeight:800,color:'var(--accent)'}}>{value}</div>}
+      {items && (
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {items.map(item=>(
+            <div key={item._id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:13}}>
+              <span style={{color:'var(--text2)'}}>{item._id||'—'}</span>
+              <span style={{fontWeight:700,color:'var(--text)',background:'var(--bg2)',padding:'2px 8px',borderRadius:20,fontSize:12}}>{item.count}</span>
             </div>
-          </div>
-        )}
-<input
-  ref={csvRef}
-  type="file"
-  accept=".csv"
-  style={{ display:'none' }}
-  onChange={handleCsvImport}
-/>
-        {/* ════ BANNERS ════ */}
-        {activeTab === 'banners' && (
-          <div>
-            <div style={s.topBar}>
-              <div>
-                <h1 style={s.pageTitle}>Banners</h1>
-                <p style={s.pageSub}>Manage homepage carousel banners</p>
-              </div>
-              <button onClick={openAddBanner} style={s.addBtn}><Plus size={14}/> Add Banner</button>
-            </div>
-            <div style={s.tip}>💡 Banners appear as a sliding carousel on the homepage. Active banners are visible to customers.</div>
-            <div className="banner-grid" style={s.bannerGrid}>
-              {bannerLoading ? (
-                <div style={{display:'flex',justifyContent:'center',padding:'50px',gridColumn:'1/-1'}}><div className="spinner"/></div>
-              ) : banners.length===0 ? (
-                <div style={{...s.empty,gridColumn:'1/-1'}}>
-                  <Image size={36} color="var(--text3)"/>
-                  <p style={{color:'var(--text2)',fontSize:'14px'}}>No banners. <button onClick={openAddBanner} style={{color:'var(--accent)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Create one!</button></p>
-                </div>
-              ) : banners.map(b => (
-                <div key={b._id} style={s.bannerCard}>
-                  <div style={{...s.bannerPrev,background:`linear-gradient(135deg,${b.bgColor},${b.bgColor2})`}}>
-{b.image ? <img src={
-  b.image?.startsWith('http') || b.image?.startsWith('https://')
-
-    ? b.image
-    : `${STATIC}${b.image}`
-} alt={b.title} style={{height:'64px',width:'64px',objectFit:'cover',borderRadius:'8px',flexShrink:0}}/> : <span style={{fontSize:'30px'}}>🛍️</span>}                    <div style={{flex:1,minWidth:0}}>
-                      {b.badge && <div style={{fontSize:'9px',fontWeight:700,color:b.accentColor,background:`${b.accentColor}22`,padding:'1px 6px',borderRadius:'20px',width:'fit-content',marginBottom:'3px'}}>{b.badge}</div>}
-                      <div style={{color:'#fff',fontWeight:700,fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.title}</div>
-                      {b.subtitle && <div style={{color:'rgba(255,255,255,0.7)',fontSize:'10px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.subtitle}</div>}
-                    </div>
-                  </div>
-                  <div style={s.bannerFoot}>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                      <span style={b.active?s.activePill:s.inactivePill}>{b.active?'● Live':'○ Hidden'}</span>
-                      <span style={{color:'var(--text3)',fontSize:'10px'}}>#{b.order}</span>
-                    </div>
-                    <div style={{display:'flex',gap:'5px'}}>
-                      <button className="action-btn" onClick={()=>toggleActive(b)} style={s.visBtn} title={b.active?'Hide':'Show'}>{b.active?<EyeOff size={12}/>:<Eye size={12}/>}</button>
-                      <button className="action-btn" onClick={()=>openEditBanner(b)} style={s.editBtn} title="Edit"><Pencil size={12}/></button>
-                      <button className="action-btn" onClick={()=>setDeleteBannerId(b._id)} style={s.delBtn} title="Delete"><Trash2 size={12}/></button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* ════ PRODUCT MODAL ════ */}
-      {modalOpen && (
-        <div style={s.overlay} onClick={e=>e.target===e.currentTarget&&closeModal()}>
-          <div style={s.modal}>
-            <div style={s.modalHead}>
-              <h2 style={s.modalTitle}>{editing?'Edit Product':'Add Product'}</h2>
-              <button onClick={closeModal} style={s.modalClose}><X size={16}/></button>
-            </div>
-            <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:'18px'}}>
-              <div className="form-grid" style={s.formGrid}>
-                <div style={s.formCol}>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Image</label>
-                    <div style={{...s.imgUp,height:'130px',...(imgPrev?s.imgUpFilled:{})}} onClick={()=>fileRef.current.click()}>
-                      {imgPrev?<img src={imgPrev} alt="preview" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                        :<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'6px'}}><Upload size={20} color="var(--text3)"/><span style={{color:'var(--text3)',fontSize:'12px'}}>Click to upload</span></div>}
-                      <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleImage}/>
-                    </div>
-                    {imgPrev&&<button type="button" style={s.rmImg} onClick={()=>{setImgFile(null);setImgPrev('')}}>Remove</button>}
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Featured</label>
-                    <button type="button" onClick={()=>setForm(f=>({...f,featured:!f.featured}))} style={s.togBtn}>
-                      {form.featured?<><ToggleRight size={20} color="var(--accent)"/><span style={{color:'var(--accent)',fontWeight:600,fontSize:'13px'}}>Featured</span></>:<><ToggleLeft size={20} color="var(--text3)"/><span style={{color:'var(--text2)',fontSize:'13px'}}>Not Featured</span></>}
-                    </button>
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Rating (0–5)</label>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                      <input style={{...s.inp,flex:1}} type="number" min="0" max="5" step="0.1" value={form.rating} onChange={e=>setForm(f=>({...f,rating:e.target.value}))} required/>
-                      <StarRating rating={parseFloat(form.rating)||0} size={14}/>
-                    </div>
-                  </div>
-                </div>
-                <div style={s.formCol}>
-                  <div style={s.field}><label style={s.lbl}>Name *</label><input style={s.inp} required placeholder="Product name" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
-                  <div style={s.field}><label style={s.lbl}>Description *</label><textarea style={{...s.inp,resize:'vertical',minHeight:'70px'}} required placeholder="Description…" value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))}/></div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-                    <div style={s.field}><label style={s.lbl}>Price (₹) *</label><input style={s.inp} type="number" min="0" required placeholder="2999" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/></div>
-                    <div style={s.field}><label style={s.lbl}>Category *</label><select style={s.inp} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-                  </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-
-  <div style={s.field}>
-    <label style={s.lbl}>Audience</label>
-
-    <select
-      style={s.inp}
-      value={form.audience}
-      onChange={e =>
-        setForm(f => ({
-          ...f,
-          audience: e.target.value
-        }))
-      }
-    >
-      <option value="all">All</option>
-      <option value="women">Women</option>
-      <option value="men">Men</option>
-      <option value="kids">Kids</option>
-      <option value="unisex">Unisex</option>
-    </select>
-  </div>
-
-  <div style={s.field}>
-    <label style={s.lbl}>Region</label>
-
-    <select
-      style={s.inp}
-      value={form.region}
-      onChange={e =>
-        setForm(f => ({
-          ...f,
-          region: e.target.value
-        }))
-      }
-    >
-      <option value="all">All</option>
-      <option value="india">India</option>
-      <option value="global">Global</option>
-    </select>
-  </div>
-
-</div>
-                  <div style={s.field}><label style={s.lbl}>Affiliate Link *</label><input style={s.inp} type="url" required placeholder="https://amzn.to/…" value={form.affiliateLink} onChange={e=>setForm(f=>({...f,affiliateLink:e.target.value}))}/></div>
-                </div>
-                <div style={s.field}>
-  <label style={s.lbl}>Tags</label>
-
-  <input
-    style={s.inp}
-    placeholder="hair oil, skincare, women fashion"
-    value={form.tags}
-    onChange={e =>
-      setForm(f => ({
-        ...f,
-        tags: e.target.value
-      }))
-    }
-  />
-</div>
-              </div>
-              <div style={s.modalFoot}>
-                <button type="button" onClick={closeModal} style={s.cancelBtn}>Cancel</button>
-                <button type="submit" disabled={saving} style={s.saveBtn}>
-                  {saving?<div style={{width:'15px',height:'15px',border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .75s linear infinite'}}/>:editing?'Save Changes':'Add Product'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ════ DELETE PRODUCT ════ */}
-      {deleteId && (
-        <div style={s.overlay}>
-          <div style={{...s.modal,maxWidth:'360px',textAlign:'center',padding:'28px 24px'}}>
-            <div style={{fontSize:'40px',marginBottom:'10px'}}>🗑️</div>
-            <h3 style={{fontFamily:'var(--font-head)',fontSize:'17px',fontWeight:700,color:'var(--text)',marginBottom:'7px'}}>Delete product?</h3>
-            <p style={{color:'var(--text2)',fontSize:'13px',marginBottom:'20px'}}>This action cannot be undone.</p>
-            <div style={{display:'flex',gap:'10px'}}>
-              <button onClick={()=>setDeleteId(null)} style={{...s.cancelBtn,flex:1,justifyContent:'center'}}>Cancel</button>
-              <button onClick={()=>handleDelete(deleteId)} style={{...s.saveBtn,flex:1,justifyContent:'center',background:'var(--hot)'}}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════ BANNER MODAL ════ */}
-      {bannerModal && (
-        <div style={s.overlay} onClick={e=>e.target===e.currentTarget&&closeBannerModal()}>
-          <div style={s.modal}>
-            <div style={s.modalHead}>
-              <h2 style={s.modalTitle}>{editingBanner?'Edit Banner':'New Banner'}</h2>
-              <button onClick={closeBannerModal} style={s.modalClose}><X size={16}/></button>
-            </div>
-            <form onSubmit={handleBannerSubmit} style={{display:'flex',flexDirection:'column',gap:'18px'}}>
-              <div className="form-grid" style={s.formGrid}>
-                <div style={s.formCol}>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Image (optional)</label>
-                    <div style={{...s.imgUp,height:'110px',...(bannerImgPrev?s.imgUpFilled:{})}} onClick={()=>bannerFileRef.current.click()}>
-                      {bannerImgPrev?<img src={bannerImgPrev} alt="preview" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                        :<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'5px'}}><Upload size={18} color="var(--text3)"/><span style={{color:'var(--text3)',fontSize:'11px'}}>Upload image</span></div>}
-                      <input ref={bannerFileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleBannerImg}/>
-                    </div>
-                    {bannerImgPrev&&<button type="button" style={s.rmImg} onClick={()=>{setBannerImgFile(null);setBannerImgPrev('')}}>Remove</button>}
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Gradient Colors</label>
-                    <div style={{display:'flex',gap:'8px',alignItems:'flex-end'}}>
-                      {[['From','bgColor'],['To','bgColor2'],['Accent','accentColor']].map(([lbl,key])=>(
-                        <div key={key} style={{display:'flex',flexDirection:'column',gap:'3px',alignItems:'center'}}>
-                          <label style={{fontSize:'9px',color:'var(--text3)',fontWeight:600}}>{lbl}</label>
-                          <input type="color" style={{width:'40px',height:'30px',borderRadius:'6px',border:'1px solid var(--border)',cursor:'pointer',padding:'2px'}}
-                            value={bannerForm[key]} onChange={e=>setBannerForm(f=>({...f,[key]:e.target.value}))}/>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{height:'22px',borderRadius:'5px',background:`linear-gradient(135deg,${bannerForm.bgColor},${bannerForm.bgColor2})`,border:'1px solid var(--border)',marginTop:'4px'}}/>
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Visibility</label>
-                    <button type="button" onClick={()=>setBannerForm(f=>({...f,active:!f.active}))} style={s.togBtn}>
-                      {bannerForm.active?<><ToggleRight size={20} color="var(--success)"/><span style={{color:'var(--success)',fontWeight:600,fontSize:'13px'}}>Live</span></>:<><ToggleLeft size={20} color="var(--text3)"/><span style={{color:'var(--text2)',fontSize:'13px'}}>Hidden</span></>}
-                    </button>
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Order</label>
-                    <input style={s.inp} type="number" min="0" placeholder="0 = first" value={bannerForm.order} onChange={e=>setBannerForm(f=>({...f,order:e.target.value}))}/>
-                  </div>
-                </div>
-                <div style={s.formCol}>
-                  <div style={s.field}><label style={s.lbl}>Headline *</label><input style={s.inp} required placeholder="e.g. Up to 50% Off Electronics" value={bannerForm.title} onChange={e=>setBannerForm(f=>({...f,title:e.target.value}))}/></div>
-                  <div style={s.field}><label style={s.lbl}>Subtext</label><input style={s.inp} placeholder="e.g. Limited time deals on top brands" value={bannerForm.subtitle} onChange={e=>setBannerForm(f=>({...f,subtitle:e.target.value}))}/></div>
-                  <div style={s.field}><label style={s.lbl}>Badge</label><input style={s.inp} placeholder="🔥 Hot Deal" value={bannerForm.badge} onChange={e=>setBannerForm(f=>({...f,badge:e.target.value}))}/></div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-                    <div style={s.field}><label style={s.lbl}>Button Text</label><input style={s.inp} placeholder="Shop Now" value={bannerForm.ctaText} onChange={e=>setBannerForm(f=>({...f,ctaText:e.target.value}))}/></div>
-                    <div style={s.field}><label style={s.lbl}>Button Link</label><input style={s.inp} type="url" placeholder="https://amzn.to/…" value={bannerForm.ctaLink} onChange={e=>setBannerForm(f=>({...f,ctaLink:e.target.value}))}/></div>
-                  </div>
-                  <div style={s.field}>
-                    <label style={s.lbl}>Preview</label>
-                    <div style={{borderRadius:'9px',overflow:'hidden',background:`linear-gradient(135deg,${bannerForm.bgColor},${bannerForm.bgColor2})`,padding:'14px 16px',minHeight:'70px',display:'flex',flexDirection:'column',gap:'5px',border:'1px solid var(--border)'}}>
-                      {bannerForm.badge&&<span style={{fontSize:'10px',fontWeight:700,color:bannerForm.accentColor,background:`${bannerForm.accentColor}22`,padding:'2px 7px',borderRadius:'20px',width:'fit-content'}}>{bannerForm.badge}</span>}
-                      <div style={{color:'#fff',fontWeight:700,fontSize:'14px'}}>{bannerForm.title||'Headline'}</div>
-                      {bannerForm.subtitle&&<div style={{color:'rgba(255,255,255,0.7)',fontSize:'11px'}}>{bannerForm.subtitle}</div>}
-                      {bannerForm.ctaText&&<div style={{background:bannerForm.accentColor,color:'#1a1200',padding:'4px 12px',borderRadius:'6px',fontSize:'11px',fontWeight:700,width:'fit-content',marginTop:'3px'}}>{bannerForm.ctaText}</div>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div style={s.modalFoot}>
-                <button type="button" onClick={closeBannerModal} style={s.cancelBtn}>Cancel</button>
-                <button type="submit" disabled={bannerSaving} style={s.saveBtn}>
-                  {bannerSaving?<div style={{width:'15px',height:'15px',border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .75s linear infinite'}}/>:editingBanner?'Save Changes':'Create Banner'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ════ DELETE BANNER ════ */}
-      {deleteBannerId && (
-        <div style={s.overlay}>
-          <div style={{...s.modal,maxWidth:'360px',textAlign:'center',padding:'28px 24px'}}>
-            <div style={{fontSize:'40px',marginBottom:'10px'}}>🗑️</div>
-            <h3 style={{fontFamily:'var(--font-head)',fontSize:'17px',fontWeight:700,color:'var(--text)',marginBottom:'7px'}}>Delete banner?</h3>
-            <p style={{color:'var(--text2)',fontSize:'13px',marginBottom:'20px'}}>This cannot be undone.</p>
-            <div style={{display:'flex',gap:'10px'}}>
-              <button onClick={()=>setDeleteBannerId(null)} style={{...s.cancelBtn,flex:1,justifyContent:'center'}}>Cancel</button>
-              <button onClick={()=>handleDeleteBanner(deleteBannerId)} style={{...s.saveBtn,flex:1,justifyContent:'center',background:'var(--hot)'}}>Delete</button>
-            </div>
-          </div>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-const s = {
-  page:{display:'flex',minHeight:'100vh',background:'var(--bg)'},
-  sidebar:{width:'200px',flexShrink:0,background:'var(--bg2)',borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',padding:'16px 12px',position:'sticky',top:0,height:'100vh',transition:'transform .28s cubic-bezier(.22,1,.36,1)'},
-  sideTop:{display:'flex',alignItems:'center',gap:'8px',paddingBottom:'14px',borderBottom:'1px solid var(--border)',marginBottom:'12px'},
-  sideLogo:{width:'28px',height:'28px',borderRadius:'7px',background:'linear-gradient(135deg,#2563eb,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 8px rgba(37,99,235,0.28)',flexShrink:0},
-  sideLogoText:{fontFamily:'var(--font-head)',fontWeight:700,fontSize:'16px',color:'var(--text)'},
-  nav:{display:'flex',flexDirection:'column',gap:'3px',flex:1},
-  navBtn:{display:'flex',alignItems:'center',gap:'7px',padding:'8px 10px',borderRadius:'7px',fontWeight:500,fontSize:'13px',cursor:'pointer',border:'1px solid transparent',width:'100%',textAlign:'left',transition:'all .15s',background:'transparent',color:'var(--text2)'},
-  sideFooter:{borderTop:'1px solid var(--border)',paddingTop:'12px'},
-  adminRow:{display:'flex',alignItems:'center',gap:'8px'},
-  avatar:{width:'30px',height:'30px',borderRadius:'50%',background:'linear-gradient(135deg,#2563eb,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:'12px',color:'#fff',flexShrink:0},
-  sideBtn:{display:'flex',alignItems:'center',gap:'3px',padding:'5px 8px',borderRadius:'6px',background:'var(--bg3)',border:'1px solid var(--border)',color:'var(--text2)',fontSize:'11px',cursor:'pointer',textDecoration:'none'},
-  main:{flex:1,padding:'24px 28px',overflowX:'auto',minWidth:0},
-  mobileTop:{display:'none',alignItems:'center',justifyContent:'space-between',marginBottom:'16px',padding:'0 0 12px',borderBottom:'1px solid var(--border)'},
-  topBar:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'20px',flexWrap:'wrap',gap:'12px'},
-  pageTitle:{fontFamily:'var(--font-head)',fontSize:'clamp(20px,2.5vw,24px)',fontWeight:700,color:'var(--text)',letterSpacing:'-0.3px'},
-  pageSub:{color:'var(--text2)',fontSize:'12px',marginTop:'3px'},
-  addBtn:{display:'flex',alignItems:'center',gap:'6px',padding:'9px 18px',borderRadius:'8px',background:'linear-gradient(135deg,#2563eb,#6366f1)',color:'#fff',fontWeight:600,fontSize:'13px',boxShadow:'0 3px 12px rgba(37,99,235,0.28)',border:'none',cursor:'pointer',whiteSpace:'nowrap',minHeight:'38px'},
-  statsGrid:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px',marginBottom:'18px'},
-  statCard:{background:'var(--card-bg)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'14px',display:'flex',alignItems:'center',gap:'12px',boxShadow:'var(--shadow-sm)'},
-  statIcon:{width:'36px',height:'36px',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0},
-  statVal:{fontFamily:'var(--font-head)',fontSize:'20px',fontWeight:700,color:'var(--text)'},
-  statLabel:{color:'var(--text3)',fontSize:'11px',marginTop:'1px'},
-  searchRow:{marginBottom:'14px'},
-  searchWrap:{position:'relative',maxWidth:'340px',display:'flex',alignItems:'center'},
-  searchInput:{width:'100%',background:'var(--bg2)',border:'1.5px solid var(--border)',borderRadius:'7px',padding:'8px 12px 8px 32px',color:'var(--text)',fontSize:'13px'},
-  tableWrap:{background:'var(--card-bg)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',overflow:'hidden',boxShadow:'var(--shadow-sm)'},
-  table:{width:'100%',borderCollapse:'collapse'},
-  thead:{background:'var(--bg2)'},
-  th:{padding:'10px 14px',textAlign:'left',fontSize:'10px',fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.6px',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap'},
-  tr:{borderBottom:'1px solid var(--border)',transition:'background .15s'},
-  td:{padding:'12px 14px',fontSize:'13px',verticalAlign:'middle',color:'var(--text)'},
-  thumb:{width:'38px',height:'38px',borderRadius:'7px',background:'var(--bg2)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0},
-  thumbImg:{width:'100%',height:'100%',objectFit:'cover'},
-  catChip:{background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',color:'var(--accent)',padding:'2px 8px',borderRadius:'20px',fontSize:'11px',fontWeight:500,whiteSpace:'nowrap'},
-  yes:{background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.3)',color:'#b45309',padding:'2px 8px',borderRadius:'20px',fontSize:'11px',fontWeight:600},
-  no:{background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--text3)',padding:'2px 8px',borderRadius:'20px',fontSize:'11px'},
-  editBtn:{width:'28px',height:'28px',borderRadius:'6px',background:'rgba(99,102,241,0.1)',color:'#6366f1',border:'1px solid rgba(99,102,241,0.22)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'},
-  delBtn:{width:'28px',height:'28px',borderRadius:'6px',background:'rgba(239,68,68,0.1)',color:'var(--hot)',border:'1px solid rgba(239,68,68,0.22)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'},
-  visBtn:{width:'28px',height:'28px',borderRadius:'6px',background:'rgba(37,99,235,0.08)',color:'var(--accent)',border:'1px solid rgba(37,99,235,0.18)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'},
-  empty:{display:'flex',flexDirection:'column',alignItems:'center',gap:'8px',padding:'48px 20px'},
-  tip:{background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',borderRadius:'9px',padding:'10px 14px',color:'var(--text2)',fontSize:'12px',lineHeight:1.5,marginBottom:'16px'},
-  bannerGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'14px'},
-  bannerCard:{background:'var(--card-bg)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',overflow:'hidden',boxShadow:'var(--shadow-sm)'},
-  bannerPrev:{height:'95px',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',overflow:'hidden'},
-  bannerFoot:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 12px',borderTop:'1px solid var(--border)'},
-  activePill:{fontSize:'10px',fontWeight:600,color:'var(--success)',background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.22)',padding:'2px 7px',borderRadius:'20px'},
-  inactivePill:{fontSize:'10px',color:'var(--text3)',background:'var(--bg2)',border:'1px solid var(--border)',padding:'2px 7px',borderRadius:'20px'},
-  menuBtn:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'7px',padding:'7px',display:'flex',cursor:'pointer',color:'var(--text2)'},
-  // Modals
-  overlay:{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.48)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'},
-  modal:{background:'var(--card-bg)',border:'1px solid var(--border)',borderRadius:'var(--radius-xl)',padding:'clamp(18px,3vw,24px)',width:'100%',maxWidth:'740px',maxHeight:'90vh',overflowY:'auto',boxShadow:'var(--shadow-lg)',animation:'fadeUp .25s cubic-bezier(.22,1,.36,1)'},
-  modalHead:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'18px'},
-  modalTitle:{fontFamily:'var(--font-head)',fontSize:'17px',fontWeight:700,color:'var(--text)'},
-  modalClose:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'7px',padding:'5px',color:'var(--text2)',display:'flex',cursor:'pointer'},
-  formGrid:{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:'18px'},
-  formCol:{display:'flex',flexDirection:'column',gap:'13px'},
-  field:{display:'flex',flexDirection:'column',gap:'4px'},
-  lbl:{fontSize:'11px',fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.5px'},
-  inp:{background:'var(--bg2)',border:'1.5px solid var(--border)',borderRadius:'7px',padding:'9px 11px',color:'var(--text)',fontSize:'13px',width:'100%',transition:'border-color .2s,box-shadow .2s'},
-  imgUp:{border:'2px dashed var(--border)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',background:'var(--bg2)',overflow:'hidden',transition:'border-color .2s'},
-  imgUpFilled:{border:'2px dashed var(--accent)'},
-  rmImg:{background:'none',color:'var(--hot)',fontSize:'11px',cursor:'pointer',border:'none',padding:0,textAlign:'left'},
-  togBtn:{display:'flex',alignItems:'center',gap:'7px',background:'var(--bg2)',border:'1.5px solid var(--border)',borderRadius:'7px',padding:'9px 11px',cursor:'pointer',fontSize:'13px',fontWeight:500,color:'var(--text)'},
-  modalFoot:{display:'flex',justifyContent:'flex-end',gap:'8px',borderTop:'1px solid var(--border)',paddingTop:'16px'},
-  cancelBtn:{display:'flex',alignItems:'center',gap:'4px',padding:'8px 18px',borderRadius:'7px',background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--text)',fontSize:'13px',cursor:'pointer'},
-  saveBtn:{display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',padding:'8px 22px',borderRadius:'7px',background:'linear-gradient(135deg,#2563eb,#6366f1)',color:'#fff',fontSize:'13px',fontWeight:600,boxShadow:'0 3px 10px rgba(37,99,235,0.28)',minWidth:'120px',cursor:'pointer',border:'none'},
-  secondaryBtn:{
-  display:'flex',
-  alignItems:'center',
-  gap:'6px',
-  padding:'9px 16px',
-  borderRadius:'8px',
-  background:'var(--bg2)',
-  border:'1px solid var(--border)',
-  color:'var(--text)',
-  fontWeight:600,
-  fontSize:'13px',
-  cursor:'pointer',
-  minHeight:'38px'
-},
+/* ══════════════════════════════════════════════════════
+   MAIN ADMIN PAGE
+══════════════════════════════════════════════════════ */
+export default function Admin() {
+  const { logout, token } = useAuth()
+  const navigate = useNavigate()
+
+  const [products,    setProducts]    = useState([])
+  const [stats,       setStats]       = useState(null)
+  const [loading,     setLoading]     = useState(true)
+  const [search,      setSearch]      = useState('')
+  const [filterStore, setFilterStore] = useState('all')
+  const [filterAud,   setFilterAud]   = useState('all')
+  const [activeTab,   setActiveTab]   = useState('products')
+  const [toast,       setToast]       = useState({ msg:'', type:'success' })
+  const [confirmDel,  setConfirmDel]  = useState(null)
+  const [drawer,      setDrawer]      = useState(null)
+  const [page,        setPage]        = useState(1)
+
+  const PER_PAGE   = 20
+  const authHeader = { Authorization:`Bearer ${token}` }
+  const showToast  = (msg, type='success') => setToast({ msg, type })
+
+  /* ── Fetch products ─────────────────────────────── */
+  const loadProducts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params = { limit:200 }
+      if (filterStore!=='all') params.store    = filterStore
+      if (filterAud  !=='all') params.audience = filterAud
+      if (search)              params.search   = search
+      const { data } = await axios.get(`${API}/products`, { params })
+      setProducts(data); setPage(1)
+    } catch { showToast('Failed to load products','error') }
+    finally  { setLoading(false) }
+  }, [filterStore, filterAud, search, token])
+
+  useEffect(() => { loadProducts() }, [loadProducts])
+
+  /* ── Fetch stats ────────────────────────────────── */
+  useEffect(() => {
+    if (activeTab!=='stats') return
+    axios.get(`${API}/products/stats`, { headers:authHeader })
+      .then(r=>setStats(r.data))
+      .catch(()=>showToast('Failed to load stats','error'))
+  }, [activeTab])
+
+  /* ── Drawer helpers ─────────────────────────────── */
+  const openAdd  = () => setDrawer({ editId:null, form:{...EMPTY_FORM} })
+  const openEdit = p  => setDrawer({
+    editId: p._id,
+    form: {
+      name:p.name, description:p.description||'', category:p.category,
+      affiliateLink:p.affiliateLink, rating:p.rating||'',
+      featured:p.featured||false, audience:p.audience||'all',
+      region:p.region||'all', store:p.store||'all',
+      tags:p.tags||[], _imagePreview:p.image||'',
+    }
+  })
+  const closeDrawer = () => setDrawer(null)
+  const handleSaved = msg => { setDrawer(null); showToast(msg); loadProducts() }
+
+  /* ── Delete ─────────────────────────────────────── */
+  const confirmDelete = async () => {
+    if (!confirmDel) return
+    try {
+      await axios.delete(`${API}/products/${confirmDel.id}`, { headers:authHeader })
+      showToast('Product deleted')
+      setProducts(p=>p.filter(x=>x._id!==confirmDel.id))
+    } catch { showToast('Failed to delete','error') }
+    finally  { setConfirmDel(null) }
+  }
+
+  const totalPages = Math.ceil(products.length/PER_PAGE)
+  const paginated  = products.slice((page-1)*PER_PAGE, page*PER_PAGE)
+
+  /* ────────────────────────────────────────────────── */
+  return (
+    <div className="admin-page">
+      <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast({msg:''})}/>
+
+      {confirmDel && (
+        <ConfirmModal
+          msg={`Delete "${confirmDel.name}"? This cannot be undone.`}
+          onConfirm={confirmDelete}
+          onCancel={()=>setConfirmDel(null)}
+        />
+      )}
+
+      {drawer && (
+        <ProductDrawer
+          editId={drawer.editId}
+          initialForm={drawer.form}
+          token={token}
+          onClose={closeDrawer}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {/* ── Desktop sidebar ────────────────────────── */}
+      <aside className="admin-sidebar">
+        <div style={{padding:'0 12px',flex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,padding:'0 4px 20px',borderBottom:'1px solid var(--border)',marginBottom:20}}>
+            <span style={{fontSize:22}}>🛍️</span>
+            <div>
+              <div style={{fontWeight:800,fontSize:13,color:'var(--text)'}}>{SITE_NAME}</div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Admin Panel</div>
+            </div>
+          </div>
+          <nav style={{display:'flex',flexDirection:'column',gap:4}}>
+            {[
+              { id:'products', icon:<Package size={15}/>,   label:'Products'   },
+              { id:'stats',    icon:<BarChart3 size={15}/>, label:'Analytics'  },
+            ].map(t=>(
+              <button key={t.id}
+                style={{
+                  display:'flex',alignItems:'center',gap:8,
+                  padding:'10px 12px',borderRadius:8,border:'none',
+                  background:activeTab===t.id?'var(--accent-bg)':'transparent',
+                  color:activeTab===t.id?'var(--accent)':'var(--text2)',
+                  fontSize:13,fontWeight:activeTab===t.id?600:400,
+                  cursor:'pointer',fontFamily:'inherit',textAlign:'left',minHeight:42,
+                }}
+                onClick={()=>setActiveTab(t.id)}>
+                {t.icon}{t.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <button onClick={logout}
+          style={{display:'flex',alignItems:'center',gap:8,margin:'0 12px',padding:'10px 12px',borderRadius:8,border:'1px solid var(--border)',background:'transparent',fontSize:13,color:'var(--text2)',cursor:'pointer',fontFamily:'inherit',minHeight:42}}>
+          <LogOut size={14}/> Sign Out
+        </button>
+      </aside>
+
+      {/* ── Main ───────────────────────────────────── */}
+      <main className="admin-main">
+
+        {/* ── PRODUCTS TAB ── */}
+        {activeTab==='products' && (<>
+
+          <div className="admin-header">
+            <div>
+              <h1 style={{margin:'0 0 4px',fontSize:'clamp(20px,3vw,28px)',fontWeight:800,color:'var(--text)',fontFamily:'var(--font-head)'}}>
+                Products
+              </h1>
+              <p style={{margin:0,fontSize:13,color:'var(--text3)'}}>
+                {loading ? '…' : `${products.length} total`}
+              </p>
+            </div>
+            <div className="admin-header-btns">
+              <button className="admin-refresh-btn" onClick={loadProducts} title="Refresh">
+                <RefreshCw size={16} style={{animation:loading?'spin 1s linear infinite':'none'}}/>
+              </button>
+              <button className="admin-add-btn" onClick={openAdd}>
+                <Plus size={15}/> Add Product
+              </button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="admin-filter-bar">
+            <div className="admin-search-box">
+              <Search size={15} style={{color:'var(--text3)',flexShrink:0}}/>
+              <input className="admin-search-input"
+                placeholder="Search products…"
+                value={search}
+                onChange={e=>setSearch(e.target.value)}/>
+              {search && (
+                <button onClick={()=>setSearch('')}
+                  style={{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',display:'flex',alignItems:'center',minWidth:36,minHeight:36,justifyContent:'center'}}>
+                  <X size={14}/>
+                </button>
+              )}
+            </div>
+            <select className="admin-select" value={filterStore} onChange={e=>setFilterStore(e.target.value)}>
+              {STORES.map(s=><option key={s} value={s}>{s==='all'?'All Stores':s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+            </select>
+            <select className="admin-select" value={filterAud} onChange={e=>setFilterAud(e.target.value)}>
+              {AUDIENCES.map(a=><option key={a} value={a}>{a==='all'?'All Audiences':a.charAt(0).toUpperCase()+a.slice(1)}</option>)}
+            </select>
+          </div>
+
+          {/* ── Desktop table ── */}
+          <div className="admin-table-wrap">
+            {loading ? (
+              <div style={{textAlign:'center',padding:48,color:'var(--text3)',fontSize:14}}>Loading products…</div>
+            ) : paginated.length===0 ? (
+              <div style={{textAlign:'center',padding:48,color:'var(--text3)',fontSize:14}}>No products found</div>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>{['Image','Name','Category','Store','Audience','Rating','Tags','Actions'].map(h=>(
+                    <th key={h} className="admin-th">{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {paginated.map((p,i)=>(
+                    <tr key={p._id} style={{background:i%2===0?'transparent':'var(--bg2)'}}>
+                      <td className="admin-td">
+                        {p.image
+                          ? <img src={p.image} alt={p.name} className="admin-product-thumb"/>
+                          : <div className="admin-product-thumb-empty">📦</div>}
+                      </td>
+                      <td className="admin-td" style={{maxWidth:180}}>
+                        <div style={{fontWeight:600,fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:'var(--text)'}}>{p.name}</div>
+                        {p.featured && <span style={{fontSize:10,padding:'2px 6px',borderRadius:999,background:'#fef3c7',color:'#d97706',fontWeight:600}}>⭐ Featured</span>}
+                      </td>
+                      <td className="admin-td">
+                        <span style={{fontSize:11,padding:'2px 8px',borderRadius:999,background:'var(--bg2)',color:'var(--text2)',fontWeight:500}}>{p.category}</span>
+                      </td>
+                      <td className="admin-td">
+                        <span style={{fontSize:11,padding:'2px 8px',borderRadius:999,background:'var(--accent-bg)',color:'var(--accent)',fontWeight:600}}>{p.store}</span>
+                      </td>
+                      <td className="admin-td" style={{fontSize:13}}>{p.audience}</td>
+                      <td className="admin-td">
+                        {p.rating>0 && (
+                          <div style={{display:'flex',alignItems:'center',gap:3}}>
+                            <Star size={11} fill="#f59e0b" color="#f59e0b"/>
+                            <span style={{fontSize:12}}>{p.rating}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="admin-td">
+                        <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                          {(p.tags||[]).slice(0,2).map(t=>(
+                            <span key={t} style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'var(--bg2)',color:'var(--text3)'}}>{t}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="admin-td">
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="admin-row-edit-btn" onClick={()=>openEdit(p)} title="Edit"><Pencil size={13}/></button>
+                          <button className="admin-row-del-btn"  onClick={()=>setConfirmDel({id:p._id,name:p.name})} title="Delete"><Trash2 size={13}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* ── Mobile product list ── */}
+          <div className="admin-table-wrap admin-product-list">
+            {loading ? (
+              <div style={{textAlign:'center',padding:48,color:'var(--text3)'}}>Loading…</div>
+            ) : paginated.length===0 ? (
+              <div style={{textAlign:'center',padding:48,color:'var(--text3)'}}>No products found</div>
+            ) : paginated.map(p=>(
+              <div key={p._id} className="admin-product-row">
+                <div className="admin-product-row-thumb">
+                  {p.image
+                    ? <img src={p.image} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    : '📦'}
+                </div>
+                <div className="admin-product-row-info">
+                  <div className="admin-product-row-name">{p.name}</div>
+                  <div className="admin-product-row-meta">
+                    {[p.category, p.store, p.rating>0?`⭐ ${p.rating}`:null].filter(Boolean).join(' · ')}
+                  </div>
+                  {p.tags?.length>0 && (
+                    <div style={{display:'flex',gap:4,marginTop:3,flexWrap:'wrap'}}>
+                      {p.tags.slice(0,2).map(t=>(
+                        <span key={t} style={{fontSize:9,padding:'1px 6px',borderRadius:999,background:'var(--accent-bg)',color:'var(--accent)',fontWeight:600}}>{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="admin-product-row-actions">
+                  <button className="admin-row-edit-btn" onClick={()=>openEdit(p)}><Pencil size={14}/></button>
+                  <button className="admin-row-del-btn"  onClick={()=>setConfirmDel({id:p._id,name:p.name})}><Trash2 size={14}/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages>1 && (
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginTop:16,flexWrap:'wrap'}}>
+              <button disabled={page===1} onClick={()=>setPage(p=>p-1)}
+                style={{padding:'10px 18px',borderRadius:10,border:'1px solid var(--border)',background:'var(--card)',cursor:page===1?'not-allowed':'pointer',fontSize:13,color:'var(--text)',fontFamily:'inherit',minHeight:44,opacity:page===1?.4:1}}>
+                ← Prev
+              </button>
+              <span style={{fontSize:13,color:'var(--text2)',padding:'0 4px'}}>
+                Page {page} of {totalPages}
+              </span>
+              <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)}
+                style={{padding:'10px 18px',borderRadius:10,border:'1px solid var(--border)',background:'var(--card)',cursor:page===totalPages?'not-allowed':'pointer',fontSize:13,color:'var(--text)',fontFamily:'inherit',minHeight:44,opacity:page===totalPages?.4:1}}>
+                Next →
+              </button>
+            </div>
+          )}
+        </>)}
+
+        {/* ── STATS TAB ── */}
+        {activeTab==='stats' && (<>
+          <h1 style={{margin:'0 0 20px',fontSize:'clamp(20px,3vw,28px)',fontWeight:800,color:'var(--text)',fontFamily:'var(--font-head)'}}>Analytics</h1>
+          {!stats
+            ? <div style={{textAlign:'center',padding:48,color:'var(--text3)'}}>Loading stats…</div>
+            : <div style={{display:'grid',gap:16,gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))'}}>
+                <StatCard title="Total Products" value={stats.total}      icon="📦"/>
+                <StatCard title="By Store"    items={stats.byStore}       icon="🏪"/>
+                <StatCard title="By Audience" items={stats.byAudience}    icon="👤"/>
+                <StatCard title="By Region"   items={stats.byRegion}      icon="🌏"/>
+              </div>
+          }
+        </>)}
+      </main>
+
+      {/* ── Mobile bottom nav bar ──────────────────── */}
+      <nav className="mobile-nav-bar" aria-label="Admin navigation">
+        <div className="mobile-nav-bar-inner">
+          {[
+            { id:'home',     icon:<Home size={20}/>,      label:'Store',    action:()=>navigate('/')            },
+            { id:'products', icon:<Package size={20}/>,   label:'Products', action:()=>setActiveTab('products') },
+            { id:'stats',    icon:<BarChart3 size={20}/>, label:'Stats',    action:()=>setActiveTab('stats')    },
+            { id:'logout',   icon:<LogOut size={20}/>,    label:'Logout',   action:logout                       },
+          ].map(item=>(
+            <button key={item.id}
+              className={`mobile-nav-item${activeTab===item.id?' active':''}`}
+              onClick={item.action}
+              aria-label={item.label}>
+              <div className="mobile-nav-icon">{item.icon}</div>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* ── Mobile FAB — only on products tab ─────── */}
+      {activeTab==='products' && (
+        <button className="mobile-fab" onClick={openAdd} aria-label="Add new product">
+          <Plus size={24}/>
+        </button>
+      )}
+
+      <style>{`
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes popIn  {
+          from { opacity:0; transform:translate(-50%,-50%) scale(.9); }
+          to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+        }
+        /* Desktop: FAB hidden */
+        @media(min-width:769px) { .mobile-fab { display:none !important; } }
+        /* Mobile: show FAB */
+        @media(max-width:768px) {
+          .mobile-fab {
+            display:flex !important;
+            position:fixed; right:16px;
+            bottom:calc(72px + env(safe-area-inset-bottom, 0px));
+            width:56px; height:56px; border-radius:50%;
+            background:linear-gradient(135deg,var(--accent),var(--indigo));
+            border:none; cursor:pointer; z-index:960;
+            box-shadow:0 4px 20px rgba(109,74,255,.45);
+            align-items:center; justify-content:center;
+            color:#fff; transition:transform .2s,box-shadow .2s;
+          }
+          .mobile-fab:active { transform:scale(.9); }
+        }
+        @media(hover:hover) { tr:hover td { background: var(--bg2) !important; } }
+      `}</style>
+    </div>
+  )
 }

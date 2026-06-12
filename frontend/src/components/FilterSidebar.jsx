@@ -1,288 +1,164 @@
-import { SlidersHorizontal, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { X, ChevronDown, SlidersHorizontal, RotateCcw } from 'lucide-react'
+import { getCategoriesForStore } from '../config/stores'
 
-const CATS = [
-  'All',
-  'Best Sellers',
-  'Fashion',
-  'Beauty',
-  'Electronics',
-  'Home',
-  'Fitness',
-  'Books',
-]
-
- const CAT_ICON = {
-  All: '🛍️',
-  'Best Sellers': '🔥',
-  Fashion: '👗',
-  Beauty: '💄',
-  Electronics: '⚡',
-  Home: '🏠',
-  Fitness: '💪',
-  Books: '📚',
-};
-
- const CAT_COLOR = {
-  All: '#2563eb',
-  'Best Sellers': '#f59e0b',
-  Fashion: '#ea580c',
-  Beauty: '#e11d48',
-  Electronics: '#0284c7',
-  Home: '#16a34a',
-  Fitness: '#059669',
-  Books: '#6d28d9',
-};
-function useIsMobile(bp = 900) {
-  const [v, setV] = useState(() => typeof window !== 'undefined' ? window.innerWidth < bp : false)
+function useIsMobile(bp = 1024) {
+  const [v, setV] = useState(
+    () => typeof window !== 'undefined' ? window.innerWidth < bp : false
+  )
   useEffect(() => {
-    const mq = window.matchMedia(`(max-width:${bp - 1}px)`)
+    const mq = window.matchMedia(`(max-width:${bp-1}px)`)
     const fn  = e => setV(e.matches)
-    mq.addEventListener('change', fn)
-    setV(mq.matches)
+    mq.addEventListener('change', fn); setV(mq.matches)
     return () => mq.removeEventListener('change', fn)
   }, [bp])
   return v
 }
 
-export default function FilterSidebar({ filters, onChange, onClear, visible, onClose }) {
-  const set    = (k, v) => onChange({ ...filters, [k]: v })
+function Section({ title, children, open: defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="filter-section">
+      <button className="filter-sec-btn" onClick={() => setOpen(v => !v)}>
+        <span className="filter-sec-label">{title}</span>
+        <ChevronDown size={13} color="var(--text3)"
+          style={{transform:open?'rotate(180deg)':'none',transition:'transform .2s',flexShrink:0}}/>
+      </button>
+      {open && <div className="filter-sec-body">{children}</div>}
+    </div>
+  )
+}
+
+export default function FilterSidebar({
+  filters, onChange, onClear, visible, onClose, activeStore
+}) {
   const mobile = useIsMobile()
+  const set = (k, v) => onChange({ ...filters, [k]: v })
+  const cats = getCategoriesForStore(activeStore)
 
-  /* Never render anything when not visible */
+  const count = [
+    filters.category && filters.category !== 'All',
+    filters.minRating > 0,
+    filters.featured,
+    filters.audience && filters.audience !== 'all',
+    filters.region   && filters.region   !== 'all',
+  ].filter(Boolean).length
+
   if (!visible) return null
-
-  const sidebarStyle = mobile ? s.drawerSidebar : s.desktopSidebar
 
   return (
     <>
-      {/* Dark overlay — ONLY on mobile, ONLY when visible */}
-      {mobile && (
-        <div
-          style={s.overlay}
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+      {mobile && <div className="sidebar-overlay" onClick={onClose}/>}
 
-      <aside style={sidebarStyle}>
+      <aside className="filter-sidebar">
+
         {/* Header */}
-        <div style={s.head}>
-          <span style={s.headTitle}>
-            <SlidersHorizontal size={14} color="var(--accent)"/> Filters
-          </span>
-          <div style={{display:'flex',gap:'6px'}}>
-            <button onClick={onClear} style={s.resetBtn}>Reset</button>
-            <button onClick={onClose} style={s.closeBtn}><X size={13}/></button>
+        <div className="filter-head">
+          <div className="filter-title">
+            <SlidersHorizontal size={14} color="var(--accent)"/>
+            Filters
+            {count > 0 && <span className="filter-badge">{count}</span>}
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+            {count > 0 && (
+              <button className="filter-reset" onClick={onClear}>
+                <RotateCcw size={11}/> Reset
+              </button>
+            )}
+            <button className="filter-close" onClick={onClose}>
+              <X size={14}/>
+            </button>
           </div>
         </div>
 
         {/* Category */}
-        <div style={s.section}>
-          <div style={s.secLabel}>Category</div>
-          <div style={s.catGrid}>
-            {CATS.map(cat => {
-              const active = filters.category === cat
-              const color  = CAT_COLOR[cat]
+        <Section title="Category">
+          <div className="filter-cat-list">
+            {cats.map(cat => {
+              const active = (filters.category || 'All') === cat
               return (
-                <button
-                  key={cat}
-                  onClick={() => set('category', cat)}
-                  style={{
-                    ...s.catBtn,
-                    ...(active ? {
-                      background: `${color}14`,
-                      border:     `1.5px solid ${color}55`,
-                      color,
-                    } : {}),
-                  }}
-                >
-                  <span style={{fontSize:'16px',lineHeight:1}}>{CAT_ICON[cat]}</span>
-                  <span style={{fontSize:'9.5px',lineHeight:1.3,textAlign:'center',fontWeight:active?600:400}}>
-                    {cat}
-                  </span>
+                <button key={cat}
+                  className={`filter-cat-item${active ? ' active' : ''}`}
+                  onClick={() => set('category', cat)}>
+                  {cat}
+                  {active && <span className="filter-check">✓</span>}
                 </button>
               )
             })}
           </div>
-        </div>
+        </Section>
 
- {/* Audience */}
-        <div style={s.section}>
-          <div style={s.secLabel}>For</div>
-          <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+        {/* Audience */}
+        <Section title="For">
+          <div className="filter-pills">
             {[
-              {val:'all',    label:'Everyone', icon:'👥'},
-              {val:'men',    label:'Men',       icon:'👨'},
-              {val:'women',  label:'Women',     icon:'👩'},
-              {val:'kids',   label:'Kids',      icon:'👦'},
-              {val:'unisex', label:'Unisex',    icon:'🤝'},
-            ].map(({val,label,icon}) => {
-              const active = (filters.audience||'all') === val
-              return (
-                <button key={val}
-                  onClick={() => set('audience', val)}
-                  style={{
-                    ...s.ratingBtn,
-                    padding:'6px 12px',
-                    display:'flex',alignItems:'center',gap:'5px',
-                    ...(active ? s.ratingBtnActive : {}),
-                  }}>
-                  <span>{icon}</span>{label}
-                </button>
-              )
-            })}
+              {v:'all',   l:'Everyone',i:'👥'},
+              {v:'women', l:'Women',   i:'👩'},
+              {v:'men',   l:'Men',     i:'👨'},
+              {v:'kids',  l:'Kids',    i:'👦'},
+              {v:'unisex',l:'Unisex',  i:'🤝'},
+            ].map(({v,l,i}) => (
+              <button key={v}
+                className={`filter-pill${(filters.audience||'all')===v?' active':''}`}
+                onClick={() => set('audience', v)}>
+                {i} {l}
+              </button>
+            ))}
           </div>
-        </div>
- 
+        </Section>
+
         {/* Region */}
-        <div style={s.section}>
-          <div style={s.secLabel}>Region</div>
-          <div style={{display:'flex',gap:'2px'}}>
+        <Section title="Region">
+          <div className="filter-pills">
             {[
-              {val:'all',    label:'All',    icon:'🌍'},
-              {val:'india',  label:'India',  icon:'🇮🇳'},
-              {val:'global', label:'Global', icon:'🌐'},
-            ].map(({val,label,icon}) => {
-              const active = (filters.region||'all') === val
-              return (
-                <button key={val}
-                  onClick={() => set('region', val)}
-                  style={{
-                    ...s.ratingBtn,
-                    padding:'6px 12px',
-                    display:'flex',alignItems:'center',gap:'5px',
-                    ...(active ? s.ratingBtnActive : {}),
-                  }}>
-                  <span>{icon}</span>{label}
-                </button>
-              )
-            })}
+              {v:'all',   l:'All Regions',i:'🌍'},
+              {v:'india', l:'India',      i:'🇮🇳'},
+              {v:'global',l:'Global',     i:'🌐'},
+            ].map(({v,l,i}) => (
+              <button key={v}
+                className={`filter-pill${(filters.region||'all')===v?' active':''}`}
+                onClick={() => set('region', v)}>
+                {i} {l}
+              </button>
+            ))}
           </div>
-        </div>
- 
-
-        {/* Price */}
-        <div style={s.section}>
-          <div style={s.secLabel}>Price Range (₹)</div>
-          <div style={s.priceRow}>
-            <input
-              type="number" style={s.priceInput} placeholder="Min"
-              value={filters.minPrice}
-              onChange={e => set('minPrice', e.target.value)}
-            />
-            <span style={{color:'var(--text3)',fontSize:'12px',flexShrink:0}}>—</span>
-            <input
-              type="number" style={s.priceInput} placeholder="Max"
-              value={filters.maxPrice}
-              onChange={e => set('maxPrice', e.target.value)}
-            />
-          </div>
-        </div>
+        </Section>
 
         {/* Rating */}
-        <div style={s.section}>
-          <div style={s.secLabel}>Minimum Rating</div>
-          {[0,1,2,3,4].map(r => (
-            <button
-              key={r}
-              onClick={() => set('minRating', r)}
-              style={{...s.ratingBtn, ...(filters.minRating===r ? s.ratingBtnActive : {})}}
-            >
-              {r === 0
-                ? 'Any Rating'
-                : <span>
-                    {'★'.repeat(r)}
-                    <span style={{color:'var(--text4)'}}>{'★'.repeat(5-r)}</span>
-                    {' & up'}
+        <Section title="Minimum Rating">
+          {[0, 3, 3.5, 4, 4.5].map(r => (
+            <button key={r}
+              className={`filter-rating-btn${filters.minRating===r?' active':''}`}
+              onClick={() => set('minRating', r)}>
+              {r === 0 ? 'Any Rating' : (
+                <>
+                  <span style={{color:'#f59e0b'}}>
+                    {'★'.repeat(Math.floor(r))}
                   </span>
-              }
+                  {r%1!==0 && <span style={{color:'#fcd34d'}}>½</span>}
+                  <span style={{color:'var(--text3)'}}>
+                    {'★'.repeat(5-Math.ceil(r))}
+                  </span>
+                  {' & up'}
+                </>
+              )}
             </button>
           ))}
-        </div>
+        </Section>
 
         {/* Featured */}
-        <div>
-          <div style={s.secLabel}>Show Only</div>
+        <Section title="Show Only" open={false}>
           <button
-            onClick={() => set('featured', !filters.featured)}
-            style={{...s.featToggle, ...(filters.featured ? s.featToggleOn : {})}}
-          >
+            className={`filter-toggle${filters.featured?' on':''}`}
+            onClick={() => set('featured', !filters.featured)}>
             <span>⭐ Featured Products</span>
-            <div style={{...s.pill, ...(filters.featured ? s.pillOn : {})}}>
-              <div style={{...s.pillDot, ...(filters.featured ? s.pillDotOn : {})}}/>
+            <div className={`toggle-track${filters.featured?' on':''}`}>
+              <div className={`toggle-thumb${filters.featured?' on':''}`}/>
             </div>
           </button>
-        </div>
+        </Section>
+
       </aside>
     </>
   )
-}
-
-/* Shared sidebar content styles */
-const sharedSidebar = {
-  background:     'var(--card-bg)',
-  border:         '1px solid var(--border)',
-  padding:        '16px',
-  display:        'flex',
-  flexDirection:  'column',
-  gap:            '16px',
-  boxShadow:      'var(--shadow)',
-}
-
-const s = {
-  /* ── Overlay: fixed dark bg, only rendered on mobile ── */
-  overlay: {
-    position:        'fixed',
-    inset:           0,
-    background:      'rgba(0,0,0,0.45)',
-    zIndex:          998,
-    backdropFilter:  'blur(2px)',
-    WebkitBackdropFilter: 'blur(2px)',
-  },
-
-  /* ── Desktop: sticky inline sidebar ── */
-  desktopSidebar: {
-    ...sharedSidebar,
-    width:          '240px',
-    flexShrink:     0,
-    borderRadius:   'var(--radius-lg)',
-    height:         'fit-content',
-    position:       'sticky',
-    top:            '130px',
-    zIndex:         1,          /* below everything fixed */
-  },
-
-  /* ── Mobile: slide-in drawer from left ── */
-  drawerSidebar: {
-    ...sharedSidebar,
-    position:       'fixed',
-    top:            0,
-    left:           0,
-    bottom:         0,
-    width:          '270px',
-    height:         '100vh',
-    borderRadius:   '0 16px 16px 0',
-    zIndex:         999,        /* above overlay (998) */
-    overflowY:      'auto',
-  },
-
-  head:        {display:'flex',alignItems:'center',justifyContent:'space-between'},
-  headTitle:   {display:'flex',alignItems:'center',gap:'6px',fontFamily:'var(--font-head)',fontWeight:600,fontSize:'14px',color:'var(--text)'},
-  resetBtn:    {background:'none',color:'var(--accent)',fontSize:'11px',fontWeight:600,border:'1px solid var(--accent-bdr)',borderRadius:'6px',padding:'3px 8px',cursor:'pointer'},
-  closeBtn:    {background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'6px',padding:'5px',display:'flex',color:'var(--text2)',cursor:'pointer'},
-  section:     {paddingBottom:'14px',borderBottom:'1px solid var(--border)',display:'flex',flexDirection:'column',gap:'8px'},
-  secLabel:    {fontSize:'10px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',color:'var(--text3)'},
-  catGrid:     {display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px'},
-  catBtn:      {display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',padding:'8px 3px',borderRadius:'9px',background:'var(--bg2)',border:'1.5px solid var(--border)',color:'var(--text2)',cursor:'pointer',transition:'all .15s'},
-  priceRow:    {display:'flex',alignItems:'center',gap:'8px'},
-  priceInput:  {flex:1,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'7px',padding:'7px 9px',color:'var(--text)',fontSize:'13px',minWidth:0},
-  ratingBtn:   {background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'7px',padding:'7px 11px',color:'var(--text2)',textAlign:'left',fontSize:'12px',cursor:'pointer',transition:'background .15s',marginBottom:'3px'},
-  ratingBtnActive: {background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.38)',color:'#b45309',fontWeight:600},
-  featToggle:  {display:'flex',alignItems:'center',justifyContent:'space-between',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'9px',padding:'9px 12px',cursor:'pointer',color:'var(--text2)',fontSize:'12px',fontWeight:500,width:'100%',transition:'all .15s'},
-  featToggleOn:{background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',color:'var(--accent)'},
-  pill:        {width:'34px',height:'19px',borderRadius:'10px',background:'var(--bg4)',border:'1px solid var(--border2)',position:'relative',flexShrink:0,transition:'all .2s'},
-  pillOn:      {background:'var(--accent)',borderColor:'var(--accent)'},
-  pillDot:     {position:'absolute',top:'2px',left:'2px',width:'13px',height:'13px',borderRadius:'50%',background:'var(--text3)',transition:'transform .2s'},
-  pillDotOn:   {background:'#fff',transform:'translateX(15px)'},
 }

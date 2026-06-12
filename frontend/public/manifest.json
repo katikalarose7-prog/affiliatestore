@@ -1,7 +1,7 @@
 {
-  "name": "PrimeOffers Store \u2014 Handpicked Prime Deals",
-  "short_name": "PrimeOffers",
-  "description": "Discover handpicked Prime affiliate deals on Beauty, Electronics, Fashion and more.",
+  "name": "BestDealProducts — Handpicked Online Deals",
+  "short_name": "BestDealProducts",
+  "description": "Discover handpicked affiliate deals on Beauty, Electronics, Fashion and more.",
   "start_url": "/",
   "display": "standalone",
   "display_override": [
@@ -9,7 +9,7 @@
     "standalone",
     "minimal-ui",
     "browser"
- ],
+  ],
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
@@ -26,7 +26,7 @@
       "sizes": "1200x630",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "PrimeOffers Store Homepage"
+      "label": "BestDealProducts Homepage"
     }
   ],
   "icons": [
@@ -55,36 +55,21 @@
       "short_name": "Electronics",
       "description": "Shop top electronics deals",
       "url": "/?category=Electronics",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.svg",
-          "sizes": "96x96"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Featured Deals",
       "short_name": "Featured",
       "description": "View featured products",
       "url": "/?featured=true",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.svg",
-          "sizes": "96x96"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Beauty & Fashion",
       "short_name": "Beauty",
       "description": "Shop beauty and fashion",
       "url": "/?category=Beauty",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.svg",
-          "sizes": "96x96"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     }
   ],
   "related_applications": [],

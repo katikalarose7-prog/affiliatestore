@@ -1,35 +1,51 @@
 const mongoose = require('mongoose');
 
-const productSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  description: { type: String, required: true },
-  price: { type: Number, required: true },
-  image: { type: String, default: '' },
-  category: {
-    type: String,
-    required: true,
-    enum: [
-  'All',
-  'Best Sellers',
-  'Fashion',
-  'Beauty',
-    'Kitchen',
-  'Electronics',
-  'Home',
-  'Fitness',
-  'Books',
-    'Gaming',
-  'Travel',
+// ── Store config — single source of truth ─────────────────────────
+const STORE_CATEGORIES = {
+  amazon:   ['Electronics','Mobiles','Laptops','Kitchen','Furniture','Home Decor',
+             'Appliances','Beauty','Fashion','Fitness','Books','Toys','Pet Supplies'],
+  myntra:   ['Women Dresses','Women Tops','Women Kurtas','Women Sarees','Women Ethnic Wear',
+             'Women Nightwear','Women Activewear','Women Footwear','Women Handbags',
+             'Men T-Shirts','Men Shirts','Men Jeans','Men Trousers','Men Ethnic Wear',
+             'Men Activewear','Men Nightwear','Men Footwear','Men Watches','Men Accessories',
+             'Kids Clothing','Kids Footwear','Kids Accessories','Beauty'],
+  flipkart: ['Mobiles','Electronics','Fashion','Home & Furniture','Appliances',
+             'Beauty','Grocery','Sports','Toys','Books','Automotive'],
+  ajio:     ['Women Dresses','Women Kurtas','Women Sarees','Women Ethnic Wear',
+             'Women Nightwear','Women Footwear','Women Handbags',
+             'Men T-Shirts','Men Shirts','Men Jeans','Men Ethnic Wear',
+             'Men Footwear','Men Watches','Men Accessories',
+             'Kids Clothing','Kids Footwear','Kids Accessories'],
+}
 
-]
-  },
+const ALL_CATEGORIES = [...new Set([
+  'Beauty','Headphones','Electronics','Fashion','Kitchen','Fitness',
+  'Books','Home Decor','Clothing','Jewellery','Footwear','Bags',
+  'Skincare','Watches','Sports','Toys','Other',
+  ...Object.values(STORE_CATEGORIES).flat()
+])]
+
+const productSchema = new mongoose.Schema({
+  // ── Core ──────────────────────────────────────────────────────────
+  name:          { type: String, required: true, trim: true },
+  description:   { type: String, required: true },
+  image:         { type: String, default: '' },          // Cloudinary secure URL
+  cloudinaryPublicId: { type: String, default: '' },     // FIX: store public_id for clean delete/update
+  category:      { type: String, required: true },
   affiliateLink: { type: String, required: true },
   rating:        { type: Number, min: 0, max: 5, default: 0 },
+  reviews:       { type: Number, default: 0 },
   featured:      { type: Boolean, default: false },
 
-  // ── NEW: Audience targeting ───────────────────────────────────────
-  // Who is this product for?
-  // Default 'all' = shows everywhere (backward compatible)
+  // ── Store ─────────────────────────────────────────────────────────
+  store: {
+    type:    String,
+    enum:    ['all', 'amazon', 'myntra', 'flipkart', 'ajio'],
+    default: 'all',
+    index:   true,
+  },
+
+  // ── Audience ──────────────────────────────────────────────────────
   audience: {
     type:    String,
     enum:    ['all', 'men', 'women', 'kids', 'unisex'],
@@ -37,9 +53,7 @@ const productSchema = new mongoose.Schema({
     index:   true,
   },
 
-  // ── NEW: Region targeting ─────────────────────────────────────────
-  // Where is this product available?
-  // Default 'all' = shows in all regions (backward compatible)
+  // ── Region ────────────────────────────────────────────────────────
   region: {
     type:    String,
     enum:    ['all', 'india', 'global'],
@@ -47,44 +61,47 @@ const productSchema = new mongoose.Schema({
     index:   true,
   },
 
-  // ── NEW: Tags for future use ──────────────────────────────────────
-  // e.g. ['trending', 'new-arrival', 'sale', 'bestseller']
-  tags: {
-    type:    [String],
-    default: [],
-    index:   true,
-  },
+  // ── Tags (used for homepage quick-filters) ─────────────────────────
+  // Tag conventions:
+  //   'bestseller'   → Best Sellers filter
+  //   'under199'     → Under ₹199 filter
+  //   'under499'     → Under ₹499 filter
+  //   'under999'     → Under ₹999 filter
+  //   'trending'     → Trending Deals filter
+  //   'newarrival'   → New Arrivals filter
+  //   'toprated'     → Top Rated filter
+  //   'editorspick'  → Editor's Picks filter
+  tags: { type: [String], default: [], index: true },
 
-  // ── NEW: SEO slug ─────────────────────────────────────────────────
-  // Auto-generated from name for clean URLs
-  // e.g. /shop/men/fashion/blue-running-shoes
-  slug: {
-    type:   String,
-    unique: false, // not required — generated on save if missing
-    index:  true,
-    sparse: true,
-  },
+  // ── SEO slug ──────────────────────────────────────────────────────
+  slug: { type: String, index: true, sparse: true },
 
-}, { timestamps: true });
+}, { timestamps: true })
 
-// ── Auto-generate slug before saving ──────────────────────────────
+// ── Auto-generate slug ────────────────────────────────────────────
 productSchema.pre('save', function(next) {
   if (this.isModified('name') || !this.slug) {
     this.slug = this.name
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')   // remove special chars
-      .replace(/\s+/g, '-')            // spaces to hyphens
-      .replace(/-+/g, '-')             // collapse multiple hyphens
-      .substring(0, 80);               // max 80 chars
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .substring(0, 80)
   }
-  next();
-});
+  next()
+})
 
-// ── Compound indexes for fast filtering ───────────────────────────
-productSchema.index({ audience: 1, category: 1 });
-productSchema.index({ region:   1, category: 1 });
-productSchema.index({ audience: 1, region:   1 });
-productSchema.index({ featured: 1, audience: 1 });
-productSchema.index({ tags:     1 });
-productSchema.index({ name: 'text', description: 'text' }); // full text search
-module.exports = mongoose.model('Product', productSchema);
+// ── Compound indexes ──────────────────────────────────────────────
+productSchema.index({ store: 1, category: 1 })
+productSchema.index({ store: 1, audience: 1 })
+productSchema.index({ store: 1, featured: 1 })
+productSchema.index({ audience: 1, category: 1 })
+productSchema.index({ region: 1, category: 1 })
+productSchema.index({ featured: 1, store: 1 })
+productSchema.index({ name: 'text', description: 'text' })
+
+const Product = mongoose.model('Product', productSchema)
+
+Product.STORE_CATEGORIES = STORE_CATEGORIES
+
+module.exports = Product

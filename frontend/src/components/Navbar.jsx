@@ -1,210 +1,272 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/Themecontext'
-import { ShoppingBag, LayoutDashboard, LogOut, Search, Sun, Moon, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Search, X, Sun, Moon, ShoppingBag, ChevronDown } from 'lucide-react'
+import { API } from '../config'
+import SearchDropdown from './SearchDropdown'
 
-export default function Navbar({ onSearch, searchValue }) {
-  const { isAdmin, logout } = useAuth()
-  const { isDark, toggle }  = useTheme()
-  const navigate = useNavigate()
-  const [mobileSearch, setMobileSearch] = useState(false)
-  const handleLogout = () => { logout(); navigate('/') }
+/* ── Store config ────────────────────────────────────── */
+const STORES = {
+  all:      { key:'all',      name:'All',      short:'All',      icon:'🏪' },
+  amazon:   { key:'amazon',   name:'Amazon',   short:'Amazon',   icon:'📦' },
+  myntra:   { key:'myntra',   name:'Myntra',   short:'Myntra',   icon:'👗' },
+  flipkart: { key:'flipkart', name:'Flipkart', short:'Flipkart', icon:'🛒' },
+  ajio:     { key:'ajio',     name:'AJIO',     short:'AJIO',     icon:'✨' },
+}
+const STORE_KEYS = ['all','amazon','myntra','flipkart','ajio']
 
+/* ── Primary quick-filters (Row 2) ───────────────────── */
+export const PRIMARY_FILTERS = [
+  { label:'Best Sellers',   tag:'bestseller',  icon:'🔥' },
+  { label:'Under ₹199',    tag:'under199',    icon:'💰' },
+  { label:'Under ₹499',    tag:'under499',    icon:'🏷️' },
+  { label:'Under ₹999',    tag:'under999',    icon:'🎯' },
+  { label:'Trending Deals', tag:'trending',   icon:'📈' },
+  { label:'New Arrivals',   tag:'newarrival', icon:'🆕' },
+  { label:'Top Rated',      tag:'toprated',   icon:'⭐' },
+  { label:"Editor's Picks", tag:'editorspick',icon:'✨' },
+]
+
+/* ── Audience tabs (Row 3) ───────────────────────────── */
+const AUDIENCE_TABS = [
+  { val:'all',   label:'All'   },
+  { val:'women', label:'Women' },
+  { val:'men',   label:'Men'   },
+  { val:'kids',  label:'Kids'  },
+]
+
+const ACCENT = '#6d4aff'
+
+/* ═══════════════════════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════════════════════ */
+export default function Navbar({
+  onSearch,
+  searchValue,
+  activeStore    = 'all',
+  onStoreChange,
+  activeFilter,
+  onFilterChange,
+  activeAudience = 'all',
+  onAudienceChange,
+  isDark,
+  onThemeToggle,
+}) {
+  const [query,      setQuery]     = useState(searchValue || '')
+  const [dropOpen,   setDropOpen]  = useState(false)
+  const [moreOpen,   setMoreOpen]  = useState(false)
+  const [hiddenTabs, setHiddenTabs]= useState([])
+  const [ready,      setReady]     = useState(false)
+
+  const searchRef = useRef()
+  const tabsRef   = useRef()
+  const moreRef   = useRef()
+
+  /* Sync external searchValue */
+  useEffect(() => { setQuery(searchValue || '') }, [searchValue])
+
+  /* Open dropdown whenever there is a non-empty query */
+  useEffect(() => { setDropOpen(query.trim().length > 0) }, [query])
+
+  /* Overflow detection for store chips */
+  const calcOverflow = useCallback(() => {
+    const wrap = tabsRef.current
+    if (!wrap) return
+    const btns  = [...wrap.querySelectorAll('[data-tab]')]
+    if (!btns.length) return
+    const avail = wrap.offsetWidth + 500
+    let used = 0; const hid = []
+    btns.forEach((el, i) => {
+      used += el.offsetWidth + 4
+      if (used > avail) hid.push(STORE_KEYS[i])
+    })
+    setHiddenTabs(hid); setReady(true)
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      calcOverflow()
+      const ro = new ResizeObserver(calcOverflow)
+      if (tabsRef.current) ro.observe(tabsRef.current)
+      return () => ro.disconnect()
+    }, 150)
+    return () => clearTimeout(t)
+  }, [calcOverflow])
+
+  /* Close dropdowns on outside click / touch */
+  useEffect(() => {
+    const fn = e => {
+      if (!searchRef.current?.contains(e.target)) {
+        setDropOpen(false)
+      }
+      if (!moreRef.current?.contains(e.target)) setMoreOpen(false)
+    }
+    document.addEventListener('mousedown', fn)
+    document.addEventListener('touchstart', fn)
+    return () => {
+      document.removeEventListener('mousedown', fn)
+      document.removeEventListener('touchstart', fn)
+    }
+  }, [])
+
+  /* Handlers */
+  const handleInput = val => {
+    setQuery(val)
+    if (!val.trim()) onSearch?.('')
+  }
+
+  const clearSearch = () => {
+    setQuery(''); setDropOpen(false); onSearch?.('')
+  }
+
+  const submit = () => {
+    if (query.trim()) { setDropOpen(false); onSearch?.(query) }
+  }
+
+  // Called from SearchDropdown when user clicks a product name
+  const handlePick = name => {
+    setQuery(name); setDropOpen(false); onSearch?.(name)
+  }
+
+  // Called from SearchDropdown "View all results" row
+  const handleViewAll = q => {
+    setQuery(q); setDropOpen(false); onSearch?.(q)
+  }
+
+  /* ─────────────────────────────────────────────────── */
   return (
-    <header style={s.header} className="sticky-top-pwa">
-      <style>{`
-        .nav-search-wrap:focus-within{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(37,99,235,0.12)!important}.nav-search-input:focus{outline:none!important;box-shadow:none!important;border:none!important}
-        .theme-btn:hover{background:var(--bg3)!important}
-        .nav-icon-btn:hover{background:var(--bg3)!important;border-color:var(--border2)!important}
-        @media(max-width:640px){
-          .nav-desktop-search{display:none!important}
-          .nav-mobile-toggle{display:flex!important}
-          .nav-admin-label{display:none!important}
-        }
-        @media(min-width:641px){
-          .nav-mobile-toggle{display:none!important}
-          .nav-mobile-search{display:none!important}
-        }
-      `}</style>
+    <nav className="navbar">
 
-      <div style={s.inner}>
+      {/* ── ROW 1: Logo | Store chips | Search | Moon ── */}
+      <div className="navbar-row1">
+
         {/* Logo */}
-        <Link to="/" style={s.logo}>
-          <div style={s.logoIcon}>
-            <ShoppingBag size={15} color="#fff" strokeWidth={2.5}/>
+        <a href="/" className="navbar-logo">
+          <div className="navbar-logo-icon">
+            <ShoppingBag size={14} color="#fff" strokeWidth={2.5}/>
           </div>
-          <span style={s.logoText}>Prime<span style={{color:'var(--accent)'}}>Offers</span></span>
-        </Link>
+          <span className="navbar-logo-text">
+            BestDeal<span>Products</span>
+          </span>
+        </a>
 
-        {/* Desktop search */}
-        {onSearch && (
-          <div className="nav-desktop-search nav-search-wrap" style={s.searchOuter}>
-            <Search size={15} style={s.searchIcon}/>
+        {/* Store chips — desktop only */}
+        <div ref={tabsRef} className="navbar-store-chips" >
+          {STORE_KEYS.map(k => {
+            const st     = STORES[k]
+            const active = activeStore === k
+            const hidden = ready && hiddenTabs.includes(k)
+            return (
+              <button
+                key={k}
+                data-tab={k}
+                className={`store-chip${active?' active':''}${hidden?' bdp-hidden':''}`}
+                onClick={() => onStoreChange?.(k)}
+              >
+                <span style={{ fontSize:14 }}>{st.icon}</span>
+                {st.name}
+              </button>
+            )
+          })}
+
+       
+        </div>
+
+        {/* Search bar */}
+        <div ref={searchRef} className="navbar-search-wrap">
+          <div className="search-box">
+            <div className="search-icon-wrap">
+              <Search size={15}/>
+            </div>
             <input
-              className="nav-search-input"
-              style={s.searchInput}
-              type="text"
-              placeholder="Search products, brands, categories…"
-              value={searchValue||''}
-              onChange={e => onSearch(e.target.value)}
+              className="search-input"
+              placeholder={
+                activeStore === 'all'
+                  ? 'Search across all stores…'
+                  : `Search in ${STORES[activeStore]?.name}…`
+              }
+              value={query}
+              onChange={e => handleInput(e.target.value)}
+              onFocus={() => { if (query.trim()) setDropOpen(true) }}
+              onKeyDown={e => e.key === 'Enter' && submit()}
               autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
             />
-            {searchValue && (
-              <button style={s.clearX} onClick={() => onSearch('')} aria-label="Clear">
+            {query && (
+              <button className="search-clear" onClick={clearSearch} aria-label="Clear search">
                 <X size={13}/>
               </button>
             )}
-            <button style={s.searchBtn} aria-label="Search">
-              <Search size={14} color="#fff" strokeWidth={2.5}/>
+            <button className="search-submit" onClick={submit}>
+              <Search size={13}/>
+              <span className="search-submit-label">Search</span>
             </button>
           </div>
-        )}
 
-        {/* Right actions */}
-        <div style={s.actions}>
-          {/* Mobile search toggle */}
-          {onSearch && (
-            <button className="nav-mobile-toggle" style={{...s.iconBtn, display:'none'}}
-              onClick={() => setMobileSearch(v => !v)} aria-label="Search">
-              {mobileSearch ? <X size={16}/> : <Search size={16}/>}
+          {/* ── Grouped search dropdown ── */}
+          {dropOpen && (
+            <SearchDropdown
+              query={query}
+              store={activeStore}
+              onPick={handlePick}
+              onViewAll={handleViewAll}
+              onClose={() => setDropOpen(false)}
+            />
+          )}
+        </div>
+
+        {/* Theme toggle */}
+        <button
+          className="nav-icon-btn"
+          onClick={onThemeToggle}
+          title={isDark ? 'Light mode' : 'Dark mode'}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun size={16} color="#f59e0b"/> : <Moon size={16}/>}
+        </button>
+      </div>
+
+      {/* ── ROW 2: Primary quick-filters ── */}
+      <div className="navbar-row2">
+        <div className="filter-scroll">
+          {PRIMARY_FILTERS.map(f => (
+            <button
+              key={f.tag}
+              className={`primary-filter-pill${activeFilter===f.tag?' active':''}`}
+              onClick={() => onFilterChange?.(activeFilter===f.tag ? null : f.tag)}
+            >
+              <span style={{ fontSize:13 }}>{f.icon}</span>
+              {f.label}
             </button>
-          )}
-
-          {/* Theme */}
-          <button className="theme-btn" onClick={toggle} style={s.themeBtn}
-            aria-label={isDark?'Light mode':'Dark mode'}>
-            {isDark ? <Sun size={15} color="#f59e0b"/> : <Moon size={15} color="var(--accent)"/>}
-          </button>
-
-          {/* Admin */}
-          {isAdmin && (
-            <>
-              <Link to="/admin" className="nav-icon-btn" style={s.iconBtn}>
-                <LayoutDashboard size={14}/>
-                <span className="nav-admin-label">Dashboard</span>
-              </Link>
-              <button className="nav-icon-btn" onClick={handleLogout}
-                style={{...s.iconBtn, color:'var(--hot)'}}>
-                <LogOut size={14}/>
-                <span className="nav-admin-label">Logout</span>
-              </button>
-            </>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* Mobile search bar */}
-      {mobileSearch && onSearch && (
-        <div className="nav-mobile-search" style={s.mobileSearch}>
-          <div className="nav-search-wrap" style={{...s.searchOuter, maxWidth:'100%'}}>
-            <Search size={15} style={s.searchIcon}/>
-            <input
-              className="nav-search-input"
-              style={{...s.searchInput, width:'100%'}}
-              type="text"
-              placeholder="Search products…"
-              value={searchValue||''}
-              onChange={e => onSearch(e.target.value)}
-              autoFocus
-              autoComplete="off"
-            />
-            {searchValue && (
-              <button style={s.clearX} onClick={() => onSearch('')}>
-                <X size={13}/>
-              </button>
-            )}
-            <button style={s.searchBtn}>
-              <Search size={14} color="#fff" strokeWidth={2.5}/>
-            </button>
-          </div>
-        </div>
-      )}
-    </header>
-  )
-}
+ 
 
-const s = {
-  header:{
-    background:'var(--nav-bg)',
-    backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-    borderBottom:'1px solid var(--nav-bdr)',
-    position:'sticky',top:0,zIndex:100,
-    boxShadow:'0 1px 0 var(--border)',
-    // Safe area handled via CSS class .sticky-top-pwa in index.css
-  },
-  inner:{
-    maxWidth:'1300px',margin:'0 auto',
-    padding:'0 clamp(14px,3vw,24px)',
-    display:'flex',alignItems:'center',gap:'clamp(10px,2vw,16px)',
-    height:'clamp(54px,7vw,64px)',
-  },
-  logo:{display:'flex',alignItems:'center',gap:'8px',flexShrink:0},
-  logoIcon:{
-    width:'clamp(28px,3.5vw,32px)',height:'clamp(28px,3.5vw,32px)',borderRadius:'9px',
-    background:'linear-gradient(135deg,var(--accent),var(--indigo))',
-    display:'flex',alignItems:'center',justifyContent:'center',
-    boxShadow:'0 2px 8px rgba(37,99,235,0.32)',flexShrink:0,
-  },
-  logoText:{
-    fontFamily:'var(--font-head)',fontWeight:700,
-    fontSize:'clamp(16px,2.2vw,19px)',letterSpacing:'-0.3px',color:'var(--text)',
-  },
-  searchOuter:{
-    flex:1,minWidth:0,maxWidth:'520px',
-    position:'relative',display:'flex',alignItems:'center',
-    background:'var(--bg2)',
-    border:'1.5px solid var(--border)',
-    borderRadius:'9px',overflow:'hidden',
-    height:'clamp(36px,5vw,42px)',
-    transition:'border-color .2s,box-shadow .2s',
-  },
-  searchInput:{
-    flex:1,minWidth:0,
-    background:'transparent',
-    border:'none',outline:'none',
-    padding:'0 8px 0 38px',
-    color:'var(--text)',fontSize:'clamp(12px,1.3vw,14px)',
-    height:'100%',width:'100%',
-  },
-  searchIcon:{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'var(--text3)',pointerEvents:'none',zIndex:1},
-  clearX:{
-    position:'absolute',right:'46px',top:'50%',transform:'translateY(-50%)',
-    background:'none',color:'var(--text3)',
-    display:'flex',alignItems:'center',cursor:'pointer',
-    border:'none',padding:'4px',zIndex:1,
-  },
-  searchBtn:{
-    flexShrink:0,alignSelf:'stretch',
-    background:'linear-gradient(135deg,var(--accent),var(--indigo))',
-    padding:'0 clamp(12px,1.8vw,16px)',
-    borderRadius:'0 9px 9px 0',
-    display:'flex',alignItems:'center',justifyContent:'center',
-    border:'none',cursor:'pointer',minWidth:'42px',
-  },
-  actions:{
-    display:'flex',alignItems:'center',
-    gap:'clamp(4px,1vw,8px)',flexShrink:0,marginLeft:'auto',
-  },
-  themeBtn:{
-    width:'clamp(32px,4vw,36px)',height:'clamp(32px,4vw,36px)',borderRadius:'8px',
-    background:'var(--bg2)',border:'1px solid var(--border)',
-    display:'flex',alignItems:'center',justifyContent:'center',
-    cursor:'pointer',flexShrink:0,transition:'background .2s',
-  },
-  iconBtn:{
-    display:'flex',alignItems:'center',gap:'5px',
-    padding:'7px clamp(8px,1.5vw,13px)',borderRadius:'8px',
-    background:'var(--bg2)',border:'1px solid var(--border)',
-    color:'var(--text2)',fontSize:'13px',fontWeight:500,
-    cursor:'pointer',whiteSpace:'nowrap',
-    transition:'background .2s,border-color .2s',
-    textDecoration:'none',minHeight:'36px',
-  },
-  mobileSearch:{
-    padding:'10px clamp(14px,3vw,24px)',
-    borderTop:'1px solid var(--border)',
-    background:'var(--nav-bg)',
-    position:'relative',
-  },
+      {/* ── Mobile store bar ── */}
+      <div className="mobile-store-bar">
+        <div className="mobile-store-bar-inner">
+          {STORE_KEYS.map(k => (
+            <button
+              key={k}
+              className={`mobile-store-pill${activeStore===k?' active':''}`}
+              onClick={() => onStoreChange?.(k)}
+            >
+              <span style={{ fontSize:14 }}>{STORES[k].icon}</span>
+              {STORES[k].short}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        .bdp-hidden { display: none !important; }
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(8px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+      `}</style>
+    </nav>
+  )
 }

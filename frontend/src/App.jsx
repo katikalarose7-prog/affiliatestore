@@ -4,6 +4,13 @@ import Home from './pages/Home'
 import Admin from './pages/Admin'
 import AdminLogin from './pages/AdminLogin'
 import PWAInstallBanner from './components/PWAInstallBanner'
+import {
+  PrivacyPolicy,
+  Terms,
+  AffiliateDisclosure,
+  About,
+  Contact,
+} from './pages/CompliancePages'
 
 function ProtectedRoute({ children }) {
   const { isAdmin } = useAuth()
@@ -14,14 +21,17 @@ export default function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={
-          <ProtectedRoute><Admin /></ProtectedRoute>
-        } />
+        <Route path="/"                    element={<Home />} />
+        <Route path="/admin/login"         element={<AdminLogin />} />
+        <Route path="/admin"               element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        {/* Compliance pages */}
+        <Route path="/privacy-policy"      element={<PrivacyPolicy />} />
+        <Route path="/terms"               element={<Terms />} />
+        <Route path="/affiliate-disclosure"element={<AffiliateDisclosure />} />
+        <Route path="/about"               element={<About />} />
+        <Route path="/contact"             element={<Contact />} />
+        <Route path="*"                    element={<Navigate to="/" replace />} />
       </Routes>
-
-      {/* PWA install prompt — shows on eligible devices */}
       <PWAInstallBanner />
     </>
   )

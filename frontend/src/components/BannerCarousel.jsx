@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 
-const STATIC   = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-
 const INTERVAL = 5000
 
 export default function BannerCarousel({ banners }) {
@@ -59,25 +57,6 @@ export default function BannerCarousel({ banners }) {
         @keyframes bannerProgress{from{width:0}to{width:100%}}
         .bn-cta:hover{transform:translateY(-2px) !important;box-shadow:0 12px 32px rgba(0,0,0,0.35) !important}
         .bn-arrow:hover{background:rgba(0,0,0,0.48) !important;transform:translateY(-50%) scale(1.12) !important}
-        @media(max-width:768px){
-
-  .bn-arrow{
-    display:none !important;
-  }
-
-}
-      @media(max-width:768px){
-
-  .bn-dot{
-    min-height:4px !important;
-    height:4px !important;
-
-    min-width:7px !important;
-
-    padding:0 !important;
-  }
-
-}  
       `}</style>
 
       {/* Slide container */}
@@ -122,7 +101,7 @@ export default function BannerCarousel({ banners }) {
             <div style={{position:'relative',display:'flex',alignItems:'center',justifyContent:'center',width:'100%'}}>
               <div style={{position:'absolute',width:'115%',height:'115%',borderRadius:'50%',border:`1px solid ${accent}35`,animation:'ringPulse 3s ease-in-out infinite'}}/>
               <div style={{position:'absolute',width:'90%',height:'90%',borderRadius:'50%',border:`1px solid ${accent}18`,animation:'ringPulse 3s ease-in-out infinite 1s'}}/>
-              <img src={`${STATIC}${b.image}`} alt={b.title} loading="lazy" decoding="async"
+              <img src={b.image} alt={b.title}
                 style={{...s.img, animation:'floatUD 5s ease-in-out infinite'}}/>
             </div>
           ) : (
@@ -153,28 +132,16 @@ export default function BannerCarousel({ banners }) {
 
       {/* Dots */}
       {total > 1 && (
-        <div className="bn-dot" style={s.dots}>
+        <div style={s.dots}>
           {banners.map((_,i) => (
             <button key={i}
               onClick={() => { goTo(i, i>idx?'next':'prev'); resetTimer() }}
-              style={{
-  ...s.dot,
-  background: i===idx
-    ? accent
-    : 'rgba(255,255,255,0.7)',
-
-  opacity: i===idx ? 1 : 0.45,
-
-  ...(window.innerWidth <= 768
-    ? {
-        width:'5px',
-        height:'5px',
-        transform:'scale(1)',
-      }
-    : {
-width: i===idx ? '18px' : '7px',      })
-}}
-aria-label={`Slide ${i+1}`}
+              style={{...s.dot,
+                width:      i===idx ? '22px':'7px',
+                opacity:    i===idx ? 1 : 0.38,
+                background: i===idx ? accent : 'rgba(255,255,255,0.75)',
+              }}
+              aria-label={`Slide ${i+1}`}
             />
           ))}
         </div>
@@ -269,39 +236,20 @@ const s = {
     cursor:'pointer',zIndex:5,backdropFilter:'blur(6px)',
     transition:'background .2s,transform .15s',
   },
- dots:{
-  position:'absolute',
-  bottom:'clamp(5px,1vw,10px)',
-  left:'50%',
-  transform:'translateX(-50%)',
-  display:'flex',
-  alignItems:'center',
-  gap:'4px',
-  zIndex:5,
-},
-dot:{
-  width:'7px',
-  minWidth:'7px',
-  maxWidth:'22px',
-
-  height:'4px',
-  minHeight:'4px',
-  maxHeight:'4px',
-
-  borderRadius:'999px',
-  border:'none',
-  cursor:'pointer',
-  padding:0,
-  margin:0,
-
-  flexShrink:0,
-  appearance:'none',
-  WebkitAppearance:'none',
-
-  backgroundClip:'padding-box',
-
-  transition:'width .3s ease,opacity .3s ease,background .3s ease',
-},
+  dots:{
+    position:'absolute',
+    bottom:'clamp(6px,1.5vw,12px)',
+    left:'50%',transform:'translateX(-50%)',
+    display:'flex',alignItems:'center',
+    gap:'clamp(3px,0.8vw,5px)',
+    zIndex:5,
+  },
+  dot:{
+    height:'clamp(4px,1vw,7px)',
+    borderRadius:'4px',border:'none',
+    cursor:'pointer',padding:0,
+    transition:'width .3s ease,opacity .3s ease,background .3s ease',
+  },
   progress:{
     position:'absolute',bottom:0,left:0,right:0,
     height:'clamp(2px,0.5vw,3px)',

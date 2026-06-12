@@ -1,18 +1,32 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// API Configuration — auto-selects correct URL per environment
-//
-//  LOCAL DEV  → uses http://localhost:5000  (via .env.local)
-//  PRODUCTION → uses VITE_API_URL set in Cloudflare Pages dashboard
-// ─────────────────────────────────────────────────────────────────────────────
+// src/config.js
+// FIX: Renamed SITE_NAME from "PrimeOffers Store" → "BestDealProducts"
+// FIX: Updated BACKEND_URL domain from primeoffersstore → bestdealproducts
 
-const RAW = import.meta.env.VITE_API_URL
+// ── API base URL ───────────────────────────────────────────────────
+// Dev  → hits localhost:5000
+// Prod → reads from VITE_API_URL env var (set in Cloudflare Pages / Railway)
+export const API = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : 'http://localhost:5000/api'
 
-// Strip trailing slash if accidentally added
-const API_URL = RAW ? RAW.replace(/\/$/, '') : 'http://localhost:5000'
+// ── Site metadata ──────────────────────────────────────────────────
+// FIX: All references renamed from "PrimeOffers" → "BestDealProducts"
+export const SITE_NAME  = 'BestDealProducts'
+export const SITE_URL   = import.meta.env.VITE_SITE_URL || 'https://bestdealproducts.pages.dev'
+export const SITE_EMAIL = 'hello@bestdealproducts.in'
 
-if (import.meta.env.DEV) {
-  console.log('[Config] API_URL:', API_URL)
+// ── Image fallback ─────────────────────────────────────────────────
+export const PLACEHOLDER_IMAGE = '/placeholder.png'
+
+// ── Store definitions ──────────────────────────────────────────────
+export const STORES = {
+  all:      { key: 'all',      name: 'All Stores', icon: '🏪' },
+  amazon:   { key: 'amazon',   name: 'Amazon',     icon: '📦' },
+  myntra:   { key: 'myntra',   name: 'Myntra',     icon: '👗' },
+  flipkart: { key: 'flipkart', name: 'Flipkart',   icon: '🛒' },
+  ajio:     { key: 'ajio',     name: 'AJIO',       icon: '✨' },
 }
 
-export const API    = `${API_URL}/api`
-export const STATIC = API_URL
+// ── Pagination ─────────────────────────────────────────────────────
+export const DEFAULT_PAGE_SIZE = 40
+export const MAX_PAGE_SIZE     = 200

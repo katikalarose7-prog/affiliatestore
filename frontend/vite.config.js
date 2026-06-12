@@ -7,28 +7,29 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // Target modern browsers for smaller bundles
+    target: 'es2020',
+    // Compress assets
+    assetsInlineLimit: 4096,
+    sourcemap: false,
+    // Chunk splitting for better caching
     rollupOptions: {
       output: {
-        // Vite 8 requires manualChunks as a function, not an object
         manualChunks(id) {
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
-            return 'vendor'
+          if (id.includes('node_modules/react') ||
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor'
           }
-          if (id.includes('node_modules/lucide-react')) {
-            return 'ui'
-          }
-          if (id.includes('node_modules/axios')) {
-            return 'http'
-          }
+          if (id.includes('node_modules/lucide-react')) return 'icons'
+          if (id.includes('node_modules/axios')) return 'http'
+          if (id.includes('node_modules/react-hot-toast')) return 'toast'
         },
         chunkFileNames:  'assets/[name]-[hash].js',
         assetFileNames:  'assets/[name]-[hash][extname]',
         entryFileNames:  'assets/[name]-[hash].js',
       },
     },
-    assetsInlineLimit: 4096,
-    sourcemap: false,
-    target: 'es2020',
   },
 
   server: {

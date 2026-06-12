@@ -1,187 +1,322 @@
 import { useState } from 'react'
-import StarRating from './StarRating'
-import { ExternalLink, ShoppingCart } from 'lucide-react'
+import { ExternalLink, ShoppingBag, Star } from 'lucide-react'
 
-const STATIC = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-
-const CAT_META = {
-  All:           { icon:'🛍️', color:'#2563eb' },
-    'Best Sellers': { icon:'🔥', color:'#dc2626' },
-  Fashion:       { icon:'👗', color:'#ea580c' },
-  Beauty:        { icon:'💄', color:'#e11d48' },
-  Electronics:   { icon:'⚡', color:'#0284c7' },
-  Home:          { icon:'🏠', color:'#0f766e' },
-  Fitness:       { icon:'💪', color:'#059669' },
-  Books:         { icon:'📚', color:'#6d28d9' },
+// ── Store config ───────────────────────────────────────────────────
+const STORE_META = {
+  amazon:   { label: 'Amazon',   color: '#FF9900', bg: '#fff3e0', icon: '📦' },
+  myntra:   { label: 'Myntra',   color: '#FF3F6C', bg: '#fce4ec', icon: '👗' },
+  flipkart: { label: 'Flipkart', color: '#2874F0', bg: '#e8eaf6', icon: '🛒' },
+  ajio:     { label: 'AJIO',     color: '#E84393', bg: '#fce4ec', icon: '✨' },
 }
 
-// Deterministic label from product id
-const DEAL_LABELS = [
-  { text:'Best Seller',    icon:'🏆', color:'#b45309', bg:'rgba(245,158,11,0.1)',  bdr:'rgba(245,158,11,0.3)'  },
-  { text:'Trending Deal',  icon:'📈', color:'#0284c7', bg:'rgba(2,132,199,0.1)',   bdr:'rgba(2,132,199,0.3)'  },
-  { text:'Top Rated',      icon:'⭐', color:'#7c3aed', bg:'rgba(124,58,237,0.1)',  bdr:'rgba(124,58,237,0.3)'  },
-  { text:'Hot Pick',       icon:'🔥', color:'#e11d48', bg:'rgba(225,29,72,0.1)',   bdr:'rgba(225,29,72,0.3)'  },
-  { text:"Editor's Choice",icon:'✨', color:'#059669', bg:'rgba(5,150,105,0.1)',   bdr:'rgba(5,150,105,0.3)'  },
-]
-const getLabel = (id) => DEAL_LABELS[(id?.charCodeAt(id.length - 1) || 0) % DEAL_LABELS.length]
-
-export default function ProductCard({ product, index = 0 }) {
-  const [imgErr, setImgErr] = useState(false)
-  const [hovered, setHovered] = useState(false)
-  const meta  = CAT_META[product.category] || { icon:'🛍️', color:'var(--accent)', bg:'var(--accent-bg)' }
-  const label = getLabel(product._id)
-
+// FIX: No Amazon-style star rating widget, no "Prime" badge,
+//      no copied Amazon review count, no Amazon logo.
+//      We show our own neutral star display using stored rating field only.
+function StarDisplay({ rating }) {
+  if (!rating || rating === 0) return null
+  const full  = Math.floor(rating)
+  const half  = rating % 1 >= 0.5
+  const empty = 5 - full - (half ? 1 : 0)
   return (
-    <article
-      className="product-card fade-up"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{...s.card, animationDelay:`${Math.min(index,8)*55}ms`}}
-    >
-      {/* Featured crown */}
-      {product.featured && (
-        <div style={s.featuredBadge}>★ Featured</div>
-      )}
-
-      {/* Deal label badge */}
-      <div style={{...s.dealBadge, background:label.bg, color:label.color, borderColor:label.bdr}}>
-        <span>{label.icon}</span> {label.text}
-      </div>
-
-      {/* Image area */}
-      <div style={s.imgWrap}>
-        <div style={{...s.imgInner, overflow:'hidden'}}>
-          {product.image && !imgErr ? (
-            <img
-src={
-      product.image?.startsWith('http://') ||
-      product.image?.startsWith('https://')
-        ? product.image
-        : `${STATIC}${product.image}`
-    }              alt={product.name}
-              className="card-img"
-              style={{...s.img, transform: hovered ? 'scale(1.07)' : 'scale(1)'}}
-              onError={() => setImgErr(true)}
-            />
-          ) : (
-            <div style={{...s.placeholder, background:meta.bg}}>
-              <span style={{fontSize:'clamp(38px,6vw,54px)'}}>{meta.icon}</span>
-            </div>
-          )}
+    <div style={s.stars}>
+      {Array(full).fill(0).map((_,i) => (
+        <Star key={`f${i}`} size={11} fill="#f59e0b" color="#f59e0b" />
+      ))}
+      {half && (
+        <div style={{ position:'relative', width:11, height:11, flexShrink:0 }}>
+          <Star size={11} color="#e5e7eb" fill="#e5e7eb"/>
+          <div style={{ position:'absolute', top:0, left:0, width:'50%', overflow:'hidden' }}>
+            <Star size={11} fill="#f59e0b" color="#f59e0b"/>
+          </div>
         </div>
+      )}
+      {Array(empty).fill(0).map((_,i) => (
+        <Star key={`e${i}`} size={11} fill="#e5e7eb" color="#e5e7eb" />
+      ))}
+      <span style={s.ratingNum}>{rating.toFixed(1)}</span>
+    </div>
+  )
+}
 
-        {/* Category chip */}
-        <span style={{...s.catChip, color:meta.color, background:meta.bg}}>
-          {product.category}
+// FIX: Image renders from Cloudinary URL stored in product.image.
+//      No Amazon image proxy, no scraped Amazon image URLs.
+function ProductImage({ src, alt, store }) {
+  const [err, setErr] = useState(false)
+  const storeMeta     = STORE_META[store]
+
+  if (!src || err) {
+    return (
+      <div style={s.imgFallback}>
+        <span style={s.fallbackIcon}>
+          {storeMeta ? storeMeta.icon : '🛍️'}
         </span>
       </div>
+    )
+  }
 
-      {/* Body */}
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      style={s.img}
+      onError={() => setErr(true)}
+    />
+  )
+}
+
+export default function ProductCard({ product }) {
+  const {
+    name        = 'Unnamed Product',
+    description = '',
+    image       = '',
+    category    = '',
+    affiliateLink = '#',
+    rating      = 0,
+    featured    = false,
+    store       = 'all',
+    tags        = [],
+  } = product
+
+  const storeMeta = STORE_META[store]
+
+  const handleClick = () => {
+    if (affiliateLink && affiliateLink !== '#') {
+      window.open(affiliateLink, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  return (
+    <article style={s.card} className="product-card" onClick={handleClick}>
+
+      {/* Image container */}
+      <div style={s.imgWrap}>
+        <ProductImage
+          src={image}
+          alt={`${name} — ${category}`}   /* FIX: descriptive alt, not "Amazon product" */
+          store={store}
+        />
+
+        {/* Store badge — top-left */}
+        {storeMeta && (
+          <div style={{ ...s.storeBadge, background: storeMeta.bg, color: storeMeta.color }}>
+            <span style={{ fontSize: 10 }}>{storeMeta.icon}</span>
+            {storeMeta.label}
+          </div>
+        )}
+
+        {/* Featured badge — top-right */}
+        {/* FIX: No "Prime" badge. Generic "Featured" only. */}
+        {featured && (
+          <div style={s.featuredBadge}>⭐ Featured</div>
+        )}
+
+        {/* Quick-filter tag chips — bottom */}
+        {tags.length > 0 && (
+          <div style={s.tagRow}>
+            {tags.slice(0, 2).map(tag => (
+              <span key={tag} style={s.tagChip}>{TAG_LABEL[tag] || tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Card body */}
       <div style={s.body}>
-        <h3 style={s.name}>{product.name}</h3>
-        <p style={s.desc}>{product.description}</p>
+        {category && <span style={s.cat}>{category}</span>}
 
-        <div style={s.metaRow}>
-          <StarRating rating={product.rating} size={13}/>
-        </div>
+        <h3 style={s.name} title={name}>{name}</h3>
 
-        {/* Footer — no price */}
+        {description && (
+          <p style={s.desc}>{description.slice(0, 90)}{description.length > 90 ? '…' : ''}</p>
+        )}
+
+        <StarDisplay rating={rating} />
+
+        {/* CTA */}
         <a
-          href={product.affiliateLink}
+          href={affiliateLink}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener noreferrer nofollow"
           style={{
-            ...s.buyBtn,
-            background: hovered
-              ? 'linear-gradient(135deg, var(--accent-h), var(--indigo))'
-              : 'linear-gradient(135deg, var(--accent), var(--indigo))',
-            boxShadow: hovered
-              ? '0 6px 24px rgba(37,99,235,0.45)'
-              : '0 3px 12px rgba(37,99,235,0.28)',
+            ...s.cta,
+            ...(storeMeta ? { background: storeMeta.color } : {}),
           }}
+          onClick={e => e.stopPropagation()}
+          aria-label={`View ${name} on ${storeMeta?.label || 'partner store'}`}
         >
-          <ShoppingCart size={14} strokeWidth={2.2}/>
-          <span>View Product</span>
-          <ExternalLink size={11} strokeWidth={2.5} style={{marginLeft:'2px'}}/>
+          <ShoppingBag size={13} strokeWidth={2.5} />
+          View Deal
+          <ExternalLink size={11} style={{ marginLeft: 'auto', opacity: 0.8 }} />
         </a>
+
+        {/* FTC / Amazon Associates required disclosure */}
+        <p style={s.disclosure}>
+          * Affiliate link — we may earn a commission
+        </p>
       </div>
     </article>
   )
 }
 
+// Tag → human label map (mirrors PRIMARY_FILTERS in Navbar)
+const TAG_LABEL = {
+  bestseller:  '🔥 Best Seller',
+  under199:    '💰 Under ₹199',
+  under499:    '🏷️ Under ₹499',
+  under999:    '🎯 Under ₹999',
+  trending:    '📈 Trending',
+  newarrival:  '🆕 New',
+  toprated:    '⭐ Top Rated',
+  editorspick: '✨ Editor\'s Pick',
+}
+
+// ── Styles ────────────────────────────────────────────────────────
 const s = {
-  card:{
-    position:'relative',
-    background:'var(--card-bg)',
-    border:'1px solid var(--card-bdr)',
-    borderRadius:'var(--radius-lg)',
-    overflow:'hidden',
-    display:'flex',flexDirection:'column',
-    boxShadow:'var(--shadow-card)',
-    opacity:0,
-    cursor:'default',
+  card: {
+    background:    'var(--card-bg, #fff)',
+    border:        '1px solid var(--border, #e5e7eb)',
+    borderRadius:  '14px',
+    overflow:      'hidden',
+    display:       'flex',
+    flexDirection: 'column',
+    cursor:        'pointer',
+    transition:    'transform .2s, box-shadow .2s',
   },
-  featuredBadge:{
-    position:'absolute',top:'10px',left:'10px',zIndex:4,
-    background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
-    color:'#78350f',fontSize:'10px',fontWeight:700,
-    padding:'3px 10px',borderRadius:'20px',
-    boxShadow:'0 2px 8px rgba(245,158,11,0.3)',
-    letterSpacing:'0.3px',
+  imgWrap: {
+    position:   'relative',
+    width:      '100%',
+    paddingTop: '75%',
+    background: 'var(--bg2, #f9fafb)',
+    overflow:   'hidden',
   },
-  dealBadge:{
-    position:'absolute',top:'10px',right:'10px',zIndex:4,
-    display:'flex',alignItems:'center',gap:'3px',
-    padding:'3px 9px',borderRadius:'20px',
-    fontSize:'10px',fontWeight:700,
-    border:'1px solid',letterSpacing:'0.2px',
-    backdropFilter:'blur(4px)',
+  img: {
+    position:   'absolute',
+    inset:      0,
+    width:      '100%',
+    height:     '100%',
+    objectFit:  'cover',
   },
-  imgWrap:{
-    position:'relative',height:'clamp(160px,22vw,210px)',
-    background:'var(--bg2)',flexShrink:0,
+  imgFallback: {
+    position:       'absolute',
+    inset:          0,
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+    background:     'var(--bg2, #f9fafb)',
   },
-  imgInner:{width:'100%',height:'100%'},
-  img:{
-    width:'100%',height:'100%',objectFit:'cover',
-    transition:'transform 0.4s cubic-bezier(.22,1,.36,1)',
+  fallbackIcon: { fontSize: 38, opacity: 0.4 },
+  storeBadge: {
+    position:    'absolute',
+    top:         8,
+    left:        8,
+    display:     'flex',
+    alignItems:  'center',
+    gap:         4,
+    padding:     '3px 8px',
+    borderRadius: 20,
+    fontSize:    10,
+    fontWeight:  700,
+    letterSpacing: '0.3px',
   },
-  placeholder:{
-    width:'100%',height:'100%',
-    display:'flex',alignItems:'center',justifyContent:'center',
+  featuredBadge: {
+    position:    'absolute',
+    top:         8,
+    right:       8,
+    padding:     '3px 8px',
+    borderRadius: 20,
+    fontSize:    10,
+    fontWeight:  700,
+    background:  'rgba(0,0,0,0.7)',
+    color:       '#fff',
+    backdropFilter: 'blur(4px)',
   },
-  catChip:{
-    position:'absolute',bottom:'10px',left:'10px',
-    padding:'3px 9px',borderRadius:'20px',
-    fontSize:'10px',fontWeight:600,
-    backdropFilter:'blur(6px)',
-    border:'1px solid rgba(255,255,255,0.15)',
+  tagRow: {
+    position:    'absolute',
+    bottom:      8,
+    left:        8,
+    display:     'flex',
+    gap:         4,
+    flexWrap:    'wrap',
   },
-  body:{
-    padding:'clamp(12px,2vw,16px)',
-    display:'flex',flexDirection:'column',gap:'8px',flex:1,
+  tagChip: {
+    padding:     '2px 7px',
+    borderRadius: 20,
+    fontSize:    9,
+    fontWeight:  700,
+    background:  'rgba(0,0,0,0.65)',
+    color:       '#fff',
+    backdropFilter: 'blur(4px)',
+    letterSpacing: '0.2px',
   },
-  name:{
-    fontFamily:'var(--font-head)',fontWeight:600,
-    fontSize:'clamp(13px,1.5vw,15px)',lineHeight:1.35,
-    color:'var(--text)',
-    display:'-webkit-box',WebkitLineClamp:2,
-    WebkitBoxOrient:'vertical',overflow:'hidden',
+  body: {
+    padding:       '12px',
+    display:       'flex',
+    flexDirection: 'column',
+    gap:           6,
+    flex:          1,
   },
-  desc:{
-    color:'var(--text3)',fontSize:'clamp(11px,1.2vw,13px)',
-    lineHeight:1.5,flex:1,
-    display:'-webkit-box',WebkitLineClamp:2,
-    WebkitBoxOrient:'vertical',overflow:'hidden',
+  cat: {
+    fontSize:    11,
+    fontWeight:  600,
+    color:       'var(--text3, #9ca3af)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
-  metaRow:{display:'flex',alignItems:'center',marginTop:'2px'},
-  buyBtn:{
-    display:'flex',alignItems:'center',justifyContent:'center',
-    gap:'6px',color:'#fff',
-    padding:'clamp(9px,1.2vw,11px) 14px',
-    borderRadius:'9px',fontSize:'clamp(12px,1.2vw,13px)',fontWeight:600,
-    marginTop:'6px',width:'100%',
-    transition:'background .25s ease, box-shadow .25s ease, transform .15s ease',
-    textDecoration:'none',
+  name: {
+    fontSize:     13,
+    fontWeight:   600,
+    color:        'var(--text, #111)',
+    lineHeight:   1.4,
+    display:      '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow:     'hidden',
+    margin:       0,
+  },
+  desc: {
+    fontSize:   12,
+    color:      'var(--text2, #6b7280)',
+    lineHeight: 1.5,
+    margin:     0,
+    display:    '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow:   'hidden',
+  },
+  stars: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        2,
+    marginTop:  2,
+  },
+  ratingNum: {
+    fontSize:   11,
+    fontWeight: 600,
+    color:      'var(--text2, #6b7280)',
+    marginLeft: 3,
+  },
+  cta: {
+    display:        'flex',
+    alignItems:     'center',
+    gap:            6,
+    width:          '100%',
+    padding:        '9px 12px',
+    borderRadius:   9,
+    border:         'none',
+    background:     '#2563eb',
+    color:          '#fff',
+    fontSize:       13,
+    fontWeight:     600,
+    cursor:         'pointer',
+    textDecoration: 'none',
+    marginTop:      4,
+  },
+  disclosure: {
+    fontSize:   10,
+    color:      'var(--text3, #9ca3af)',
+    margin:     '2px 0 0',
+    lineHeight: 1.4,
   },
 }
