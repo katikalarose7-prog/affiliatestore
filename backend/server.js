@@ -13,7 +13,6 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ── CORS ───────────────────────────────────────────────────────────
-
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
   .split(',').map(o => o.trim().replace(/\/$/, ''));
 
@@ -33,12 +32,9 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-//app.options(/.*/, cors(corsOptions));
-//app.use(cors(corsOptions));
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+app.options(/.*/, cors(corsOptions));
+app.use(cors(corsOptions));
+
 // ── Security headers (Helmet) ──────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
