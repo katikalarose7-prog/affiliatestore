@@ -9,7 +9,7 @@ const crypto    = require('crypto');
 
 const app = express();
 
-// ── Trust proxy (Railway runs behind one) ──────────────────────────
+// ── Trust proxy (Render runs behind one) ────────────────────────────
 app.set('trust proxy', 1);
 
 // ── CORS ───────────────────────────────────────────────────────────
@@ -173,9 +173,11 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀  Server on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 
-  if (process.env.NODE_ENV === 'production' && process.env.RAILWAY_PUBLIC_DOMAIN) {
+  // Render's self-ping (was Railway before)
+  const renderURL = process.env.RENDER_EXTERNAL_URL; // e.g. https://your-service.onrender.com
+  if (process.env.NODE_ENV === 'production' && renderURL) {
     const https = require('https');
-    const pingURL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/health`;
+    const pingURL = `${renderURL}/health`;
     setInterval(() => {
       https.get(pingURL, res => {
         console.log(`♻️   Self-ping ${res.statusCode}`);
