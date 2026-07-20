@@ -1,238 +1,258 @@
-import { useState } from 'react'
-import { ExternalLink, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react'
-import { STORES } from '../config/stores'
+/**
+ * ProductCard.jsx  (full version with content fields)
+ *
+ * Renders description, pros & cons, who it's best for, how to use.
+ * This satisfies Amazon's content quality requirement.
+ */
 
-/* ── Helpers ─────────────────────────────────────────── */
+import { useState } from "react";
 
-// Auto-generate 3 bullet highlights from the product name + category + description.
-// These give Amazon reviewers the "valuable insight" they require.
-function getHighlights(name, category, description) {
-  const n = (name || '').toLowerCase()
-  const d = (description || '').toLowerCase()
-  const c = (category || '').toLowerCase()
+const ASSOCIATES_TAG = "bestdealsp020-21";
 
-  // If description is rich enough, extract first 3 sentences
-  if (description && description.length > 80) {
-    const sentences = description
-      .split(/[.!?]+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 20)
-      .slice(0, 3)
-    if (sentences.length >= 2) return sentences
+function ensureTag(url) {
+  if (!url) return "#";
+  try {
+    const u = new URL(url);
+    if (!u.searchParams.get("tag")) u.searchParams.set("tag", ASSOCIATES_TAG);
+    return u.toString();
+  } catch {
+    return url;
   }
-
-  // Otherwise, auto-generate from category signals
-  const map = {
-    beauty:    ['Dermatologist-tested formula safe for daily use','Free from harsh chemicals and sulphates','Suitable for all skin and hair types'],
-    skincare:  ['Non-comedogenic — won\'t clog pores','Contains skin-nourishing active ingredients','Lightweight formula absorbs quickly'],
-    hair:      ['Strengthens hair from root to tip','Controls frizz and adds natural shine','Works on all hair types including coloured hair'],
-    electronics:['Energy-efficient with long battery life','Compatible with all major devices and OS','Backed by manufacturer warranty'],
-    headphones:['Deep bass with noise-cancellation technology','Comfortable over-ear design for long sessions','Wireless Bluetooth with 20+ hr battery life'],
-    kitchen:   ['Food-grade materials — BPA free and dishwasher safe','Saves prep time with ergonomic design','Durable build for everyday home cooking'],
-    fitness:   ['Supports muscle recovery and joint health','Suitable for beginners and advanced users','Compact design — easy to store at home'],
-    fashion:   ['Breathable fabric comfortable for all-day wear','Versatile style — dress up or down','Available in multiple sizes and colours'],
-    jewellery: ['Hypoallergenic metal — safe for sensitive skin','Tarnish-resistant coating for lasting shine','Lightweight design for everyday wear'],
-    footwear:  ['Cushioned insole for all-day comfort','Durable outsole with good grip on all surfaces','Lightweight upper for a natural feel'],
-    books:     ['Written by an expert with real-world insights','Practical takeaways you can apply immediately','Well-reviewed by readers across skill levels'],
-    toys:      ['Safe non-toxic materials certified for children','Develops creativity and motor skills','Suitable for the recommended age group'],
-    furniture: ['Easy assembly with all hardware included','Solid build holds up to daily use','Neutral design fits any room décor'],
-    watches:   ['Scratch-resistant mineral glass dial','Water-resistant up to 30 metres','Accurate quartz movement with date display'],
-  }
-
-  // Match category key
-  for (const key of Object.keys(map)) {
-    if (c.includes(key) || n.includes(key) || d.includes(key)) return map[key]
-  }
-
-  // Generic fallback
-  return [
-    'Carefully selected for quality and value',
-    'Highly rated by verified buyers',
-    'Fast delivery available across India',
-  ]
 }
 
-// Short "why buy" blurb — 1 sentence, shown below title
-function getWhyBuy(name, category, description) {
-  if (description && description.trim().length > 40) {
-    // Use first sentence of description if it's meaningful
-    const first = description.split(/[.!?]/)[0].trim()
-    if (first.length > 30 && first.length < 160) return first + '.'
-  }
-  const c = (category || '').toLowerCase()
-  const n = (name || '').toLowerCase()
-  if (c.includes('beauty') || c.includes('skin'))   return 'A bestselling pick trusted by thousands of customers for visible results.'
-  if (c.includes('electronic') || c.includes('headphone')) return 'Built to last — delivers premium performance at an honest price.'
-  if (c.includes('kitchen'))  return 'Makes everyday cooking easier, faster, and more enjoyable.'
-  if (c.includes('fashion') || c.includes('cloth')) return 'A wardrobe essential that works for every occasion.'
-  if (c.includes('fitness'))  return 'Helps you stay consistent with your health and fitness goals.'
-  if (c.includes('book'))     return 'A must-read that delivers real insight and lasting value.'
-  if (c.includes('toy'))      return 'Keeps kids engaged while helping them learn and grow.'
-  return 'A top pick loved by shoppers — excellent quality for the price.'
-}
+export default function ProductCard({ product }) {
+  const [expanded, setExpanded] = useState(false);
 
-/* ── Star display ────────────────────────────────────── */
-function Stars({ rating }) {
-  const full  = Math.floor(rating)
-  const half  = rating % 1 >= 0.4
-  const empty = 5 - full - (half ? 1 : 0)
-  return (
-    <span style={{ display:'flex', alignItems:'center', gap:1 }}>
-      {Array(full).fill(0).map((_,i) => <StarSvg key={`f${i}`} fill="#f59e0b"/>)}
-      {half && <StarSvg half/>}
-      {Array(empty).fill(0).map((_,i) => <StarSvg key={`e${i}`}/>)}
-    </span>
-  )
-}
-function StarSvg({ fill, half }) {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24">
-      {half
-        ? <>
-            <defs>
-              <linearGradient id="h">
-                <stop offset="50%" stopColor="#f59e0b"/>
-                <stop offset="50%" stopColor="#e2e8f0"/>
-              </linearGradient>
-            </defs>
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="url(#h)" stroke="#f59e0b" strokeWidth="1"/>
-          </>
-        : <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-            fill={fill || '#e2e8f0'} stroke={fill || '#e2e8f0'} strokeWidth="1"/>
-      }
-    </svg>
-  )
-}
+  const {
+    title, image, price, originalPrice,
+    affiliateLink, description,
+    pros = [], cons = [], bestFor, howToUse,
+    rating, category,
+  } = product;
 
-/* ══════════════════════════════════════════════════════
-   PRODUCT CARD
-   Amazon wants: title, image, meaningful description,
-   key highlights, rating, clear CTA, affiliate disclosure
-══════════════════════════════════════════════════════ */
-export default function ProductCard({ product: p }) {
-  const [imgError,  setImgError]  = useState(false)
-  const [imgLoaded, setImgLoaded] = useState(false)
-  const [expanded,  setExpanded]  = useState(false)
+  const taggedLink = ensureTag(affiliateLink);
+  const discount   = originalPrice && price
+    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    : null;
 
-  const store    = STORES[p.store] || null
-  const rating   = parseFloat(p.rating) || 0
-  const highlights = getHighlights(p.name, p.category, p.description)
-  const whyBuy    = getWhyBuy(p.name, p.category, p.description)
-
-  // Deal badge
-  const dealBadge =
-    p.featured    ? { text:'⭐ Featured',    bg:'rgba(245,158,11,.18)', color:'#92400e' } :
-    rating >= 4.5 ? { text:'🏆 Top Rated',   bg:'rgba(16,185,129,.18)', color:'#065f46' } :
-    rating >= 4.0 ? { text:'🔥 Best Seller', bg:'rgba(109,74,255,.15)', color:'#4c1d95' } :
-    null
+  const hasContent = description || pros.length || cons.length || bestFor || howToUse;
 
   return (
-    <article className="prod-card" itemScope itemType="https://schema.org/Product">
+    <article className="pc-card">
+      <style>{styles}</style>
 
-      {/* ── Image ── */}
-      <div className="prod-img-wrap">
-        {!imgLoaded && !imgError && (
-          <div className="skeleton" style={{ position:'absolute', inset:0 }}/>
+      {/* Disclosure */}
+      <span className="pc-ad-badge">#Ad</span>
+
+      {/* Image */}
+      <a href={taggedLink} target="_blank" rel="nofollow sponsored noopener noreferrer"
+        className="pc-image-link">
+        <img src={image} alt={title} loading="lazy" className="pc-image" />
+        {discount && <span className="pc-discount">{discount}% OFF</span>}
+      </a>
+
+      {/* Info */}
+      <div className="pc-body">
+        {category && <span className="pc-category">{category}</span>}
+
+        <h3 className="pc-title">
+          <a href={taggedLink} target="_blank" rel="nofollow sponsored noopener noreferrer">
+            {title}
+          </a>
+        </h3>
+
+        {/* Description */}
+        {description && <p className="pc-description">{description}</p>}
+
+        {/* Best For */}
+        {bestFor && (
+          <p className="pc-best-for">
+            <span className="pc-best-for-label">Best for:</span> {bestFor}
+          </p>
         )}
-        {p.image && !imgError
-          ? <img
-              className="prod-img"
-              src={p.image}
-              alt={`${p.name} — ${p.category} available on ${store?.name || 'online store'}`}
-              style={{ opacity: imgLoaded ? 1 : 0 }}
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgError(true)}
-              loading="lazy"
-              decoding="async"
-              itemProp="image"
-            />
-          : <div className="prod-img-fallback">
-              <ShoppingBag size={28} color="var(--text3)" strokeWidth={1.5}/>
-            </div>
-        }
 
-        {dealBadge && (
-          <div className="prod-deal-badge"
-            style={{ background: dealBadge.bg, color: dealBadge.color }}>
-            {dealBadge.text}
+        {/* Price */}
+        <div className="pc-price-row">
+          <span className="pc-price">₹{price?.toLocaleString("en-IN")}</span>
+          {originalPrice && (
+            <span className="pc-original-price">₹{originalPrice?.toLocaleString("en-IN")}</span>
+          )}
+        </div>
+
+        {/* Rating */}
+        {rating && (
+          <div className="pc-rating">
+            {"★".repeat(Math.round(rating))}{"☆".repeat(5 - Math.round(rating))}
+            <span className="pc-rating-val"> {rating}/5</span>
           </div>
         )}
 
-        {store && store.key !== 'all' && (
-          <div className={`prod-store-badge badge-${store.key}`}>
-            {store.icon} {store.name}
-          </div>
-        )}
-      </div>
+        {/* Expand/collapse for pros, cons, how to use */}
+        {hasContent && (
+          <>
+            <button className="pc-toggle" onClick={() => setExpanded((v) => !v)}>
+              {expanded ? "▲ Less details" : "▼ More details"}
+            </button>
 
-      {/* ── Body ── */}
-      <div className="prod-body">
-
-        {/* Category */}
-        <div className="prod-cat" itemProp="category">{p.category}</div>
-
-        {/* Product name */}
-        <h3 className="prod-title" title={p.name} itemProp="name">{p.name}</h3>
-
-        {/* ── Why buy — 1-line hook ── */}
-        <p className="prod-why">{whyBuy}</p>
-
-        {/* ── Key highlights ── */}
-        <ul className="prod-highlights">
-          {highlights.slice(0, expanded ? highlights.length : 2).map((h, i) => (
-            <li key={i} className="prod-highlight-item">
-              <span className="prod-highlight-dot">✓</span>
-              {h}
-            </li>
-          ))}
-        </ul>
-
-        {/* Expand / collapse toggle when there are more than 2 highlights */}
-        {highlights.length > 2 && (
-          <button
-            className="prod-expand-btn"
-            onClick={e => { e.preventDefault(); setExpanded(v => !v) }}
-          >
-            {expanded
-              ? <><ChevronUp size={11}/> Show less</>
-              : <><ChevronDown size={11}/> {highlights.length - 2} more highlights</>}
-          </button>
-        )}
-
-        {/* ── Rating row ── */}
-        {rating > 0 && (
-          <div className="prod-rating" itemProp="aggregateRating"
-            itemScope itemType="https://schema.org/AggregateRating">
-            <Stars rating={rating}/>
-            <span className="prod-rating-num" itemProp="ratingValue">{rating.toFixed(1)}</span>
-            {p.reviews > 0 && (
-              <span className="prod-reviews" itemProp="reviewCount">
-                ({p.reviews >= 1000
-                  ? (p.reviews / 1000).toFixed(1) + 'k'
-                  : p.reviews} reviews)
-              </span>
+            {expanded && (
+              <div className="pc-details">
+                {(pros.length > 0 || cons.length > 0) && (
+                  <div className="pc-pros-cons">
+                    {pros.length > 0 && (
+                      <div className="pc-pros">
+                        <p className="pc-detail-label">✓ Pros</p>
+                        <ul>{pros.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                      </div>
+                    )}
+                    {cons.length > 0 && (
+                      <div className="pc-cons">
+                        <p className="pc-detail-label">✗ Cons</p>
+                        <ul>{cons.map((c, i) => <li key={i}>{c}</li>)}</ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {howToUse && (
+                  <div className="pc-how-to-use">
+                    <p className="pc-detail-label">How to use</p>
+                    <p>{howToUse}</p>
+                  </div>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
 
-        {/* ── CTA ── */}
-        <a
-          href={p.affiliateLink}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          className="prod-cta"
-          aria-label={`View ${p.name} deal on ${store?.name || 'partner store'}`}
-        >
-          <ExternalLink size={13} strokeWidth={2.5}/>
-          View Deal
+        {/* CTA */}
+        <a href={taggedLink} target="_blank"
+          rel="nofollow sponsored noopener noreferrer"
+          className="pc-cta">
+          View on Amazon →
         </a>
-
-        {/* ── Affiliate disclosure — required by Amazon Associates & FTC ── */}
-        <p className="prod-disclosure">
-          * Affiliate link — we may earn a commission at no extra cost to you
-        </p>
-
       </div>
     </article>
-  )
+  );
 }
+
+const styles = `
+  .pc-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s;
+  }
+  .pc-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .pc-ad-badge {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 2;
+  }
+  .pc-image-link { display: block; position: relative; }
+  .pc-image {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: contain;
+    background: #f8fafc;
+    padding: 12px;
+  }
+  .pc-discount {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .pc-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .pc-category {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6366f1;
+  }
+  .pc-title { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.4; color: #1e293b; }
+  .pc-title a { color: inherit; text-decoration: none; }
+  .pc-title a:hover { color: #6366f1; }
+  .pc-description { margin: 0; font-size: 13px; color: #475569; line-height: 1.5; }
+  .pc-best-for {
+    margin: 0;
+    font-size: 12.5px;
+    color: #475569;
+    background: #f0fdf4;
+    border-left: 3px solid #22c55e;
+    padding: 6px 10px;
+    border-radius: 0 6px 6px 0;
+  }
+  .pc-best-for-label { font-weight: 600; color: #15803d; }
+  .pc-price-row { display: flex; align-items: baseline; gap: 8px; }
+  .pc-price { font-size: 18px; font-weight: 700; color: #1e293b; }
+  .pc-original-price { font-size: 13px; color: #94a3b8; text-decoration: line-through; }
+  .pc-rating { font-size: 13px; color: #f59e0b; }
+  .pc-rating-val { color: #64748b; font-size: 12px; }
+  .pc-toggle {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #64748b;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .pc-toggle:hover { border-color: #6366f1; color: #6366f1; }
+  .pc-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .pc-pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pc-detail-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+  }
+  .pc-pros ul, .pc-cons ul { margin: 0; padding-left: 16px; line-height: 1.6; }
+  .pc-pros li { color: #15803d; }
+  .pc-cons li { color: #b91c1c; }
+  .pc-how-to-use p:last-child { margin: 0; color: #475569; line-height: 1.5; }
+  .pc-cta {
+    display: block;
+    background: #FF9900;
+    color: #111;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    margin-top: auto;
+    transition: background 0.15s;
+  }
+  .pc-cta:hover { background: #e68900; }
+`;
