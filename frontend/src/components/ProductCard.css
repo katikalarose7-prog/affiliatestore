@@ -1,0 +1,254 @@
+/* ProductCard.css
+   Import this ONCE at your app's top level (main.jsx / App.jsx),
+   or via the component file — just make sure it's not duplicated.
+*/
+
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.pc-card {
+  position: relative;
+  height: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.pc-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.pc-ad-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  z-index: 2;
+}
+
+.pc-image-link {
+  display: block;
+  position: relative;
+}
+.pc-image {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: contain;
+  background: #f8fafc;
+  padding: 12px;
+}
+.pc-discount {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.pc-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.pc-category {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6366f1;
+}
+
+.pc-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #0f172a;
+  min-height: 2.7em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pc-title a {
+  color: inherit;
+  text-decoration: none;
+}
+.pc-title a:hover {
+  color: #6366f1;
+}
+
+.pc-description {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.55;
+  min-height: 4.65em;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pc-best-for {
+  margin: 0;
+  font-size: 12.5px;
+  color: #14532d;
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+  padding: 6px 10px;
+  border-radius: 0 6px 6px 0;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pc-best-for-label {
+  font-weight: 700;
+  color: #15803d;
+}
+
+.pc-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pc-price {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.pc-price-unavailable {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  font-style: italic;
+}
+.pc-original-price {
+  font-size: 13px;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.pc-rating {
+  font-size: 13px;
+  color: #f59e0b;
+  letter-spacing: 1px;
+}
+.pc-rating-val {
+  color: #64748b;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+.pc-toggle {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.pc-toggle:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+.pc-toggle:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.pc-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.pc-pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.pc-detail-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+.pc-pros ul,
+.pc-cons ul {
+  margin: 0;
+  padding-left: 16px;
+  line-height: 1.6;
+}
+.pc-pros li {
+  color: #15803d;
+}
+.pc-cons li {
+  color: #b91c1c;
+}
+.pc-how-to-use p:last-child {
+  margin: 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.pc-cta {
+  display: block;
+  background: #ff9900;
+  color: #111;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: auto;
+  transition: background 0.15s;
+}
+.pc-cta:hover {
+  background: #e68900;
+}
+.pc-cta:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .pc-pros-cons {
+    grid-template-columns: 1fr;
+  }
+}

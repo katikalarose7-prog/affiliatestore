@@ -1,24 +1,3 @@
-/**
- * ProductCard.jsx (fixed)
- *
- * What changed from the original and why:
- *
- * 1. Removed the inline `<style>{styles}</style>` rendered inside every
- *    card. That meant N duplicate <style> blocks for N cards, which in
- *    an SSR app is a classic cause of hydration mismatches — React
- *    bails out of hydrating that subtree, so onClick handlers silently
- *    stop working ("More details" doing nothing) and layout can look
- *    broken (flex rules losing out) even though the CSS is correct.
- *    Styles now live in ProductCard.css, imported once.
- *
- * 2. Every card is now guaranteed a title, description, "best for" line,
- *    and pros/cons — via withFallbackCopy() — instead of silently
- *    rendering blank sections when the feed data is incomplete.
- *
- * 3. Price safely shows "Price unavailable" instead of a bare "₹0"
- *    when price data is missing.
- */
-
 import { useState } from "react";
 import "./ProductCard.css";
 import { withFallbackCopy } from "./productCopy";
@@ -39,7 +18,6 @@ function ensureTag(url) {
 export default function ProductCard({ product: rawProduct }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Guarantees title/description/bestFor/pros/cons are never empty
   const product = withFallbackCopy(rawProduct);
 
   const {
