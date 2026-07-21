@@ -1,51 +1,81 @@
 /**
- * affiliateLink.js
+ * affiliateLink.js (v2 — multi-platform)
  *
- * Amazon rejected the account partly because tracking IDs weren't
- * reliably present on outbound links. The most common causes of that:
+ * You sell across Amazon, Myntra, Flipkart, and AJIO, going through
+ * an affiliate network (Cuelinks/EarnKaro/INRDeals/Admitad/vCommission
+ * etc.) for the non-Amazon platforms. Those networks work differently
+ * from Amazon Associates:
  *
- *   1. The product feed contains a shortened/redirect link (bit.ly,
- *      a custom short domain, etc.) instead of a real amazon.in / .com
- *      URL — Amazon's reviewers can't verify a tag hidden behind a
- *      redirect they don't control.
- *   2. The tagging function was only wired up in ONE component. If any
- *      other page/component builds an Amazon link directly (search
- *      results, a "view all" link, JSON-LD structured data, a sitemap,
- *      server-side rendering, etc.) without calling this, that link
- *      ships untagged.
+ *   - Amazon: you build the link yourself and append ?tag=YOUR_TAG.
+ *   - Networks: you generate/convert the link on their side, and they
+ *     hand you back a URL already carrying your tracking (often on
+ *     their own domain, e.g. cuelinks.com, ekaro.in, ad.admitad.com —
+ *     or the original merchant domain with their own tracking params
+ *     baked in).
  *
- * Fix: one function, used EVERYWHERE a product link is rendered
- * (cards, category pages, sitemaps, structured data). It:
- *   - Refuses to silently pass through non-Amazon domains
- *   - Always forces YOUR tag, overwriting any different tag already present
- *   - Logs a clear console warning the moment it hits a bad link, so you
- *     catch it in dev instead of finding out from Amazon
+ * v1 of this file only recognized Amazon domains, so it treated every
+ * Myntra/Flipkart/AJIO link as invalid and showed "Link unavailable" —
+ * even though those were real, already-tracked links. This version
+ * recognizes all four platforms plus common network redirect domains,
+ * and only blocks a link when it's genuinely broken (not a URL at all,
+ * or completely empty) — not just because it isn't Amazon.
+ *
+ * IMPORTANT: add your specific network's actual domain(s) below if
+ * they're not already listed — I've included the common ones, but
+ * confirm against a real generated link from your dashboard.
  */
 
 export const ASSOCIATES_TAG = "bestdealsp020-21";
 
-// Add every Amazon domain you actually link to
-const ALLOWED_HOSTS = [
+const AMAZON_HOSTS = [
   "amazon.in",
-  "www.amazon.in",
   "amazon.com",
-  "www.amazon.com",
-  "amzn.in", // Amazon's own official short-link domain — fine to allow
-  "amzn.to", // Amazon's own official short-link domain — fine to allow
+  "amzn.in",
+  "amzn.to",
 ];
 
+// Direct merchant domains — allowed even without a network wrapper,
+// since some networks tag the merchant URL directly rather than
+// redirecting through their own domain.
+const MERCHANT_HOSTS = [
+  "myntra.com",
+  "flipkart.com",
+  "ajio.com",
+];
+
+// Common affiliate network redirect domains. Trusted as already
+// tracked — we don't modify these, since altering query params on a
+// network's own redirect URL can break their tracking.
+const NETWORK_HOSTS = [
+  "cuelinks.com",
+  "linksredirect.com",
+  "ekaro.in",
+  "earnkaro.com",
+  "inrdeals.com",
+  "admitad.com",
+  "ad.admitad.com",
+  "vcommission.com",
+  "vc-cdn.com",
+];
+
+function normalizeHost(hostname) {
+  return hostname.replace(/^www\./, "");
+}
+
+function hostMatches(host, list) {
+  return list.some((h) => host === h || host.endsWith(`.${h}`));
+}
+
 /**
- * Builds a guaranteed-tagged Amazon affiliate link, or returns null
- * (never a broken/untagged link) if the URL isn't actually Amazon.
- *
- * Use this instead of rendering `affiliateLink` directly, anywhere
- * in the codebase.
+ * Builds a working, appropriately-tracked link for any of your
+ * platforms, or returns null only when the link is genuinely broken
+ * (missing / not a valid URL). Never blocks a link just for being a
+ * non-Amazon platform.
  */
 export function buildAffiliateLink(rawUrl, { context = "" } = {}) {
   if (!rawUrl) {
     console.warn(
-      `[affiliateLink] Missing affiliateLink${context ? ` for ${context}` : ""}. ` +
-        `This product will not render a working link.`
+      `[affiliateLink] Missing affiliateLink${context ? ` for ${context}` : ""}.`
     );
     return null;
   }
@@ -60,24 +90,45 @@ export function buildAffiliateLink(rawUrl, { context = "" } = {}) {
     return null;
   }
 
-  const host = u.hostname.replace(/^www\./, "");
-  const isAmazon = ALLOWED_HOSTS.some(
-    (h) => host === h || host === h.replace(/^www\./, "")
-  );
+  const host = normalizeHost(u.hostname);
 
-  if (!isAmazon) {
-    console.warn(
-      `[affiliateLink] "${rawUrl}" is not an Amazon domain${
-        context ? ` (${context})` : ""
-      }. Shortened/third-party redirect links can hide your tag from ` +
-        `Amazon's reviewers and violate Associates policy — link directly ` +
-        `to the amazon.in product page instead.`
-    );
-    return null;
+  // Amazon: we control the tagging directly — always force our tag.
+  if (hostMatches(host, AMAZON_HOSTS)) {
+    u.searchParams.set("tag", ASSOCIATES_TAG);
+    return u.toString();
   }
 
-  // Always force OUR tag — overwrite anything already there, don't just
-  // fill it in if absent. Guarantees every rendered link is attributed.
-  u.searchParams.set("tag", ASSOCIATES_TAG);
+  // Known network redirect domain — trust it as already tracked,
+  // pass through unchanged.
+  if (hostMatches(host, NETWORK_HOSTS)) {
+    return u.toString();
+  }
+
+  // Direct merchant domain (Myntra/Flipkart/AJIO) not wrapped by a
+  // known network domain. Still render it — but warn, since a raw
+  // merchant link with no visible tracking params is worth
+  // double-checking against your network dashboard.
+  if (hostMatches(host, MERCHANT_HOSTS)) {
+    const hasTrackingParams = [...u.searchParams.keys()].length > 0;
+    if (!hasTrackingParams) {
+      console.warn(
+        `[affiliateLink] "${rawUrl}"${context ? ` (${context})` : ""} is a ` +
+          `direct ${host} link with no tracking parameters. Confirm this ` +
+          `was actually generated through your affiliate network — a raw, ` +
+          `untracked merchant link earns no commission and can also cause ` +
+          `the same "tracking ID not used" issue Amazon flagged.`
+      );
+    }
+    return u.toString();
+  }
+
+  // Unrecognized domain entirely — still render it, but flag loudly
+  // so you notice and can add it to the allowlists above if it's
+  // actually legitimate (e.g. a new platform or network you've added).
+  console.warn(
+    `[affiliateLink] "${rawUrl}"${context ? ` (${context})` : ""} is on an ` +
+      `unrecognized domain (${host}). If this is a real platform/network, ` +
+      `add "${host}" to MERCHANT_HOSTS or NETWORK_HOSTS in affiliateLink.js.`
+  );
   return u.toString();
 }
