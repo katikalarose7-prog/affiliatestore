@@ -16,7 +16,7 @@
  * it's supplementary, not core.
  */
 
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { withFallbackCopy } from "./productCopy";
 import { buildAffiliateLink } from "./affiliateLink";
 
@@ -61,9 +61,8 @@ const styles = {
   image: {
     width: "100%",
     height: "100%",
-    objectFit: "contain",
-    padding: "4%",
-    boxSizing: "border-box",
+    objectFit: "cover",
+    display: "block",
   },
   body: {
     padding: "3.5% 4% 4%",
@@ -96,6 +95,26 @@ const styles = {
     fontSize: "clamp(11.5px, 2.8vw, 13px)",
     color: "#334155",
     lineHeight: 1.6,
+    minHeight: "11.2em", // 7 lines × 1.6 line-height, reserved on every card
+  },
+  descriptionClamped: {
+    display: "-webkit-box",
+    WebkitLineClamp: 7,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  },
+  readMoreBtn: {
+    background: "none",
+    border: "none",
+    padding: 0,
+    margin: "-0.3em 0 0",
+    fontSize: "clamp(11.5px, 2.8vw, 13px)", // same font size as description
+    fontFamily: "inherit",
+    fontWeight: 700,
+    color: "#334155",
+    textDecoration: "underline",
+    cursor: "pointer",
+    alignSelf: "flex-start",
   },
   bestFor: {
     margin: 0,
@@ -197,6 +216,9 @@ const styles = {
 export default function ProductCard({ product: rawProduct }) {
   const [howToUseOpen, setHowToUseOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [descOverflows, setDescOverflows] = useState(false);
+  const descRef = useRef(null);
 
   const product = withFallbackCopy(rawProduct);
   const {
@@ -212,6 +234,16 @@ export default function ProductCard({ product: rawProduct }) {
     category,
     personalNote,
   } = product;
+
+  // Detect whether the description actually exceeds 7 lines while
+  // clamped — only then do we show the "Read more" link at all.
+  useLayoutEffect(() => {
+    if (!descExpanded && descRef.current) {
+      setDescOverflows(
+        descRef.current.scrollHeight > descRef.current.clientHeight + 1
+      );
+    }
+  }, [description, descExpanded]);
 
   // Strict: null if not a real, taggable Amazon link — never renders
   // a silently-broken or untagged URL.
@@ -252,8 +284,28 @@ export default function ProductCard({ product: rawProduct }) {
           {taggedLink ? <a {...linkProps} style={styles.titleLink}>{title}</a> : title}
         </h3>
 
-        {/* Always visible — not gated behind a click */}
-        <p style={styles.description}>{description}</p>
+        {/* Always visible — not gated behind a click.
+            Fixed to reserve 7 lines on every card; only shows
+            "Read more" if the text actually exceeds 7 lines. */}
+        <p
+          ref={descRef}
+          style={
+            descExpanded
+              ? styles.description
+              : { ...styles.description, ...styles.descriptionClamped }
+          }
+        >
+          {description}
+        </p>
+        {descOverflows && (
+          <button
+            type="button"
+            style={styles.readMoreBtn}
+            onClick={() => setDescExpanded((v) => !v)}
+          >
+            {descExpanded ? "Read less" : "Read more"}
+          </button>
+        )}
 
         {/* Only rendered when you've actually written it — never
             auto-generated, since a fabricated "I used this" claim
