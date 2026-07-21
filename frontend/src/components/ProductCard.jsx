@@ -51,7 +51,7 @@ const styles = {
   imageLink: { display: "block" },
   imageBox: {
     width: "100%",
-    aspectRatio: "3 / 4",
+    aspectRatio: "4 / 3",
     background: "#f8fafc",
     display: "flex",
     alignItems: "center",
@@ -107,6 +107,18 @@ const styles = {
     borderRadius: "0 6px 6px 0",
   },
   bestForLabel: { fontWeight: 700, color: "#15803d" },
+  personalNote: {
+    margin: 0,
+    fontSize: "clamp(11.5px, 2.8vw, 13px)",
+    color: "#1e3a5f",
+    background: "#eff6ff",
+    borderLeft: "3px solid #3b82f6",
+    padding: "6px 9px",
+    borderRadius: "0 6px 6px 0",
+    fontStyle: "italic",
+    lineHeight: 1.55,
+  },
+  personalNoteLabel: { fontWeight: 700, fontStyle: "normal", color: "#1d4ed8" },
   rating: {
     fontSize: "clamp(11.5px, 2.8vw, 13px)",
     color: "#f59e0b",
@@ -198,6 +210,7 @@ export default function ProductCard({ product: rawProduct }) {
     howToUse,
     rating,
     category,
+    personalNote,
   } = product;
 
   // Strict: null if not a real, taggable Amazon link — never renders
@@ -242,13 +255,23 @@ export default function ProductCard({ product: rawProduct }) {
         {/* Always visible — not gated behind a click */}
         <p style={styles.description}>{description}</p>
 
+        {/* Only rendered when you've actually written it — never
+            auto-generated, since a fabricated "I used this" claim
+            is a fake-testimonial risk, not a content fix. */}
+        {personalNote && personalNote.trim() && (
+          <p style={styles.personalNote}>
+            <span style={styles.personalNoteLabel}>Our take:</span>{" "}
+            {personalNote.trim()}
+          </p>
+        )}
+
         {bestFor && (
           <p style={styles.bestFor}>
             <span style={styles.bestForLabel}>Best for:</span> {bestFor}
           </p>
         )}
 
-        {rating && (
+        {Boolean(rating) && rating > 0 && (
           <div style={styles.rating}>
             {"★".repeat(Math.round(rating))}
             {"☆".repeat(5 - Math.round(rating))}
