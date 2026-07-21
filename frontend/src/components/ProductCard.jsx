@@ -1,19 +1,13 @@
 /**
- * ProductCard.jsx (v5 — designed around the Amazon Associates rejection)
+ * ProductCard.jsx (v7)
  *
- * Change 1 — tracking ID reliability:
- * Links are now built with buildAffiliateLink() from affiliateLink.js,
- * which refuses to render a non-Amazon URL (no shortened/redirect
- * links slipping through) and always forces your tag onto the URL.
- * If a product's link is missing or invalid, the card shows a
- * disabled state instead of a silently broken/untagged link.
- *
- * Change 2 — content sufficiency:
- * Description, "Best for", and Pros/Cons are shown directly on the
- * card by default — not hidden behind a "More details" click. Content
- * a reviewer (or a crawler that doesn't interact with the page) never
- * sees doesn't count as content. "How to use" stays collapsible since
- * it's supplementary, not core.
+ * Changes from v6:
+ * - Uses product.name (your actual schema field) instead of a
+ *   non-existent product.title.
+ * - No fallback "Category Pick" name — if it's genuinely empty
+ *   (shouldn't happen, `name` is required in your schema), the
+ *   heading is skipped rather than showing a made-up label.
+ * - "Buying tip" and "Verdict" blocks render when aiCopy has them.
  */
 
 import { useState, useRef, useLayoutEffect } from "react";
@@ -108,7 +102,7 @@ const styles = {
     border: "none",
     padding: 0,
     margin: "-0.3em 0 0",
-    fontSize: "clamp(11.5px, 2.8vw, 13px)", // same font size as description
+    fontSize: "clamp(11.5px, 2.8vw, 13px)",
     fontFamily: "inherit",
     fontWeight: 700,
     color: "#334155",
@@ -138,6 +132,30 @@ const styles = {
     lineHeight: 1.55,
   },
   personalNoteLabel: { fontWeight: 700, fontStyle: "normal", color: "#1d4ed8" },
+  buyingTip: {
+    margin: 0,
+    fontSize: "clamp(11px, 2.6vw, 12.5px)",
+    color: "#78350f",
+    background: "#fffbeb",
+    borderLeft: "3px solid #f59e0b",
+    padding: "6px 9px",
+    borderRadius: "0 6px 6px 0",
+  },
+  buyingTipLabel: { fontWeight: 700, color: "#b45309" },
+  verdict: {
+    margin: 0,
+    fontSize: "clamp(11.5px, 2.8vw, 13px)",
+    color: "#334155",
+    lineHeight: 1.55,
+  },
+  verdictLabel: {
+    margin: "0 0 4px",
+    fontSize: "clamp(10px, 2.4vw, 11px)",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    color: "#475569",
+  },
   rating: {
     fontSize: "clamp(11.5px, 2.8vw, 13px)",
     color: "#f59e0b",
@@ -222,22 +240,22 @@ export default function ProductCard({ product: rawProduct }) {
 
   const product = withFallbackCopy(rawProduct);
   const {
-    title,
+    name,
     image,
     affiliateLink,
     description,
     pros = [],
     cons = [],
     bestFor,
+    buyingTip,
+    verdict,
     howToUse,
     rating,
     category,
     personalNote,
-    store, // optional explicit platform name from your data, e.g. "Myntra"
+    store,
   } = product;
 
-  // Detect whether the description actually exceeds 7 lines while
-  // clamped — only then do we show the "Read more" link at all.
   useLayoutEffect(() => {
     if (!descExpanded && descRef.current) {
       setDescOverflows(
@@ -246,19 +264,12 @@ export default function ProductCard({ product: rawProduct }) {
     }
   }, [description, descExpanded]);
 
-  // Strict: null if not a real, taggable Amazon link — never renders
-  // a silently-broken or untagged URL.
-  const taggedLink = buildAffiliateLink(affiliateLink, { context: title });
+  const taggedLink = buildAffiliateLink(affiliateLink, { context: name });
   const linkProps = taggedLink
     ? { href: taggedLink, target: "_blank", rel: "nofollow sponsored noopener noreferrer" }
     : {};
 
-  // "View on Myntra" / "View on Flipkart" / "View on Amazon" / etc.
-  // Prefers an explicit `store` field from your product data (most
-  // reliable — works even if the link is wrapped by a network
-  // redirect domain); falls back to detecting the platform from the
-  // link's own domain when no `store` field is present.
-  const rawPlatformName = store || getPlatformName(taggedLink) || "Store";
+  const rawPlatformName = (store && store !== "all" ? store : null) || getPlatformName(taggedLink) || "Store";
   const platformName =
     rawPlatformName.charAt(0).toUpperCase() + rawPlatformName.slice(1).toLowerCase();
 
@@ -278,25 +289,24 @@ export default function ProductCard({ product: rawProduct }) {
       {taggedLink ? (
         <a {...linkProps} style={styles.imageLink}>
           <div style={styles.imageBox}>
-            <img src={image} alt={title} loading="lazy" style={styles.image} />
+            <img src={image} alt={name || category || "Product"} loading="lazy" style={styles.image} />
           </div>
         </a>
       ) : (
         <div style={styles.imageBox}>
-          <img src={image} alt={title} loading="lazy" style={styles.image} />
+          <img src={image} alt={name || category || "Product"} loading="lazy" style={styles.image} />
         </div>
       )}
 
       <div style={styles.body}>
         {category && <span style={styles.category}>{category}</span>}
 
-        <h3 style={styles.title}>
-          {taggedLink ? <a {...linkProps} style={styles.titleLink}>{title}</a> : title}
-        </h3>
+        {name && (
+          <h3 style={styles.title}>
+            {taggedLink ? <a {...linkProps} style={styles.titleLink}>{name}</a> : name}
+          </h3>
+        )}
 
-        {/* Always visible — not gated behind a click.
-            Fixed to reserve 7 lines on every card; only shows
-            "Read more" if the text actually exceeds 7 lines. */}
         <p
           ref={descRef}
           style={
@@ -317,9 +327,6 @@ export default function ProductCard({ product: rawProduct }) {
           </button>
         )}
 
-        {/* Only rendered when you've actually written it — never
-            auto-generated, since a fabricated "I used this" claim
-            is a fake-testimonial risk, not a content fix. */}
         {personalNote && personalNote.trim() && (
           <p style={styles.personalNote}>
             <span style={styles.personalNoteLabel}>Our take:</span>{" "}
@@ -363,6 +370,19 @@ export default function ProductCard({ product: rawProduct }) {
                 </ul>
               </div>
             )}
+          </div>
+        )}
+
+        {buyingTip && (
+          <p style={styles.buyingTip}>
+            <span style={styles.buyingTipLabel}>Buying tip:</span> {buyingTip}
+          </p>
+        )}
+
+        {verdict && (
+          <div>
+            <p style={styles.verdictLabel}>Verdict</p>
+            <p style={styles.verdict}>{verdict}</p>
           </div>
         )}
 

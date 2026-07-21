@@ -60,6 +60,25 @@ const productSchema = new mongoose.Schema({
   tags:  { type: [String], default: [], index: true },
   slug:  { type: String, index: true, sparse: true },
 
+  // ── AI-generated review copy ────────────────────────
+  // Populated by services/aiCopyGenerator.js (run via
+  // backfill-ai-copy.js). This is the primary source for the
+  // "description" shown on ProductCard, plus bestFor/pros/cons/
+  // buyingTip/verdict which have no other home in this schema.
+  // description here is deliberately separate from the required
+  // `description` field above — that field is often listing-style
+  // text; aiCopy.description is original review-style writing meant
+  // to replace it for display purposes.
+  aiCopy: {
+    description: { type: String, default: '' },
+    bestFor:     { type: String, default: '' },
+    pros:        { type: [String], default: [] },
+    cons:        { type: [String], default: [] },
+    buyingTip:   { type: String, default: '' },
+    verdict:     { type: String, default: '' },
+    generatedAt: { type: Date },
+  },
+
 }, { timestamps: true })
 
 productSchema.pre('save', function(next) {
