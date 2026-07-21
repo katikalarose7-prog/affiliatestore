@@ -1,119 +1,153 @@
 /**
  * productCopy.js
  *
- * Generates good, readable copy for a product card even when the
- * underlying data (from your feed/DB) is missing fields.
+ * IMPORTANT CONTEXT (Amazon Associates rejection — "content is
+ * insufficient"): the original version of this file generated the
+ * exact same templated sentence for every product, just swapping in
+ * the title/category — e.g. "X is a solid pick for your wardrobe,
+ * chosen for fit, material, and value." repeated hundreds of times
+ * with minor word swaps. That reads as duplicate/thin content to a
+ * reviewer or crawler, and is a very plausible contributor to the
+ * rejection you received.
  *
- * This is what was silently producing empty-looking cards before:
- * if `description`, `bestFor`, `pros`, or `cons` were blank/undefined,
- * the card just rendered nothing for that section. This module fills
- * those gaps with sensible, category-aware copy so every card looks
- * complete.
+ * This version:
+ *  1. Prefers REAL fields from your product data (material, fit,
+ *     occasion, careInstructions, sizingNote) when present, so the
+ *     generated text is actually specific to that product, not just
+ *     the category.
+ *  2. Falls back to a shorter, honest line (not a padded paragraph)
+ *     when no specific attributes are available — padding a sentence
+ *     to sound substantial without real information is exactly what
+ *     got flagged.
+ *  3. Logs a console warning whenever a card is rendering GENERATED
+ *     copy instead of authored copy, so you have a visible signal
+ *     (in dev tools) of which products still need a human-written
+ *     description before your next Associates application/review.
+ *
+ * The real fix for the content-quality violation is authored content:
+ * add `description`, `bestFor`, `pros`, `cons` (and ideally `material`,
+ * `fit`, `occasion`, `careInstructions`) to your product records
+ * written by a person who's actually looked at the product. This file
+ * only prevents a card from looking broken while that's in progress —
+ * it is not a substitute for real editorial content at scale.
  */
 
-// Light per-category phrasing so fallback copy doesn't read as generic filler
 const CATEGORY_HOOKS = {
-  "Women Kurtas": {
-    hook: "ethnic wardrobe",
-    occasions: "festive days, office wear, and casual outings",
-  },
-  "Women Dresses": {
-    hook: "everyday and occasion wear",
-    occasions: "brunches, evenings out, and casual weekdays",
-  },
-  "Women Tops": {
-    hook: "everyday styling",
-    occasions: "work, weekends, and layering",
-  },
-  "Women Sarees": {
-    hook: "traditional wardrobe",
-    occasions: "weddings, festivals, and formal events",
-  },
-  Electronics: {
-    hook: "daily tech setup",
-    occasions: "work, entertainment, and everyday use",
-  },
-  Default: {
-    hook: "everyday needs",
-    occasions: "regular use",
-  },
+  "Women Kurtas": { hook: "ethnic wardrobe", occasions: "festive days, office wear, and casual outings" },
+  "Women Dresses": { hook: "everyday and occasion wear", occasions: "brunches, evenings out, and casual weekdays" },
+  "Women Tops": { hook: "everyday styling", occasions: "work, weekends, and layering" },
+  "Women Sarees": { hook: "traditional wardrobe", occasions: "weddings, festivals, and formal events" },
+  Electronics: { hook: "daily tech setup", occasions: "work, entertainment, and everyday use" },
+  Default: { hook: "everyday needs", occasions: "regular use" },
 };
 
 function cleanTitle(title, category) {
   if (title && title.trim()) return title.trim();
-  // No generic "Product" placeholder — fall back to something
-  // category-specific so the title never reads as a filler word.
-  const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
   return category ? `${category} Pick` : "Featured Pick";
 }
 
 /**
- * Builds a 2–3 sentence description when the feed didn't supply one.
- * Uses title + category + rating, so it reads specific rather than templated.
+ * Builds a description. Uses real product-specific attributes when
+ * available (material, fit, occasion) so the text is genuinely about
+ * THIS product, not a template. Returns { text, isGenerated }.
  */
 export function generateDescription(product) {
-  const { title, category, rating } = product;
+  const { title, category, rating, material, fit, occasion } = product;
   const t = cleanTitle(title, category);
   const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
 
-  const ratingClause =
-    rating && rating >= 4
-      ? ` It's rated ${rating}/5 by verified buyers, so quality isn't a gamble.`
-      : "";
+  const specifics = [];
+  if (material) specifics.push(`made from ${material}`);
+  if (fit) specifics.push(`a ${fit} fit`);
+  if (occasion) specifics.push(`suited to ${occasion}`);
 
-  return (
-    `${t} is a solid pick for your ${hook.hook}, chosen for fit, material, and value.` +
-    ` Works well for ${hook.occasions}.${ratingClause}`
-  );
+  if (specifics.length > 0) {
+    const ratingClause =
+      rating && rating >= 4 ? ` Rated ${rating}/5 by buyers who've used it.` : "";
+    return {
+      text: `${t} features ${specifics.join(", ")}.${ratingClause}`,
+      isGenerated: true,
+    };
+  }
+
+  // No specific attributes to draw on — keep it short and honest
+  // rather than padding out a generic paragraph.
+  return {
+    text: `${t} — a ${hook.hook} option worth a look on Amazon.in. Full details on the product page.`,
+    isGenerated: true,
+  };
 }
 
-/**
- * Returns a "best for" one-liner when missing.
- */
 export function generateBestFor(product) {
   const { category } = product;
   const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
-  return `Shoppers who want reliable ${category?.toLowerCase() || "picks"} for ${hook.occasions}.`;
+  return {
+    text: `Shoppers looking for ${category?.toLowerCase() || "something"} for ${hook.occasions}.`,
+    isGenerated: true,
+  };
 }
 
-/**
- * Ensures every card has non-empty pros/cons so the expanded view
- * never looks broken or half-filled.
- */
 export function generateProsCons(product) {
   const { rating } = product;
   const pros = [];
   const cons = [];
-
   if (rating && rating >= 4) pros.push(`Highly rated at ${rating}/5`);
-  pros.push("Ships and is sold via Amazon.in");
-
+  pros.push("Sold and fulfilled via Amazon.in");
   cons.push("Availability can change quickly");
-
-  return { pros, cons };
+  return { pros, cons, isGenerated: true };
 }
 
 /**
- * Normalizes a raw product record into one that's always safe to render.
- * Call this once when the product list is fetched, or inline in ProductCard.
+ * Normalizes a raw product record so every card has content to show —
+ * while flagging (via console.warn) which cards are relying on
+ * generated filler rather than authored copy, so you can track and
+ * prioritize which products still need real editorial content.
  */
 export function withFallbackCopy(product) {
   const title = cleanTitle(product.title, product.category);
-  const description =
-    product.description && product.description.trim()
-      ? product.description.trim()
-      : generateDescription(product);
-  const bestFor =
-    product.bestFor && product.bestFor.trim()
-      ? product.bestFor.trim()
-      : generateBestFor(product);
 
-  const needsProsCons =
-    (!product.pros || product.pros.length === 0) &&
-    (!product.cons || product.cons.length === 0);
-  const { pros, cons } = needsProsCons
-    ? generateProsCons(product)
-    : { pros: product.pros || [], cons: product.cons || [] };
+  let description = product.description?.trim();
+  let descriptionIsGenerated = false;
+  if (!description) {
+    const gen = generateDescription(product);
+    description = gen.text;
+    descriptionIsGenerated = true;
+  }
 
-  return { ...product, title, description, bestFor, pros, cons };
+  let bestFor = product.bestFor?.trim();
+  let bestForIsGenerated = false;
+  if (!bestFor) {
+    const gen = generateBestFor(product);
+    bestFor = gen.text;
+    bestForIsGenerated = true;
+  }
+
+  const hasAuthoredProsCons =
+    (product.pros && product.pros.length > 0) ||
+    (product.cons && product.cons.length > 0);
+  const prosConsResult = hasAuthoredProsCons
+    ? { pros: product.pros || [], cons: product.cons || [], isGenerated: false }
+    : generateProsCons(product);
+
+  if (
+    (descriptionIsGenerated || bestForIsGenerated || prosConsResult.isGenerated) &&
+    typeof console !== "undefined"
+  ) {
+    console.warn(
+      `[productCopy] "${title}" (id: ${product._id || "unknown"}) is showing ` +
+        `generated fallback content instead of authored copy. Add real ` +
+        `description/bestFor/pros/cons to this product's data before your ` +
+        `next Amazon Associates review — generated filler across many ` +
+        `products is a likely cause of a "content is insufficient" rejection.`
+    );
+  }
+
+  return {
+    ...product,
+    title,
+    description,
+    bestFor,
+    pros: prosConsResult.pros,
+    cons: prosConsResult.cons,
+  };
 }
