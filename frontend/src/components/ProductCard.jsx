@@ -18,7 +18,7 @@
 
 import { useState, useRef, useLayoutEffect } from "react";
 import { withFallbackCopy } from "./productCopy";
-import { buildAffiliateLink } from "./affiliateLink";
+import { buildAffiliateLink, getPlatformName } from "./affiliateLink";
 
 const styles = {
   card: {
@@ -233,6 +233,7 @@ export default function ProductCard({ product: rawProduct }) {
     rating,
     category,
     personalNote,
+    store, // optional explicit platform name from your data, e.g. "Myntra"
   } = product;
 
   // Detect whether the description actually exceeds 7 lines while
@@ -251,6 +252,13 @@ export default function ProductCard({ product: rawProduct }) {
   const linkProps = taggedLink
     ? { href: taggedLink, target: "_blank", rel: "nofollow sponsored noopener noreferrer" }
     : {};
+
+  // "View on Myntra" / "View on Flipkart" / "View on Amazon" / etc.
+  // Prefers an explicit `store` field from your product data (most
+  // reliable — works even if the link is wrapped by a network
+  // redirect domain); falls back to detecting the platform from the
+  // link's own domain when no `store` field is present.
+  const platformName = store || getPlatformName(taggedLink) || "Store";
 
   return (
     <article
@@ -376,7 +384,7 @@ export default function ProductCard({ product: rawProduct }) {
 
         {taggedLink ? (
           <a {...linkProps} style={styles.cta}>
-            View on Amazon →
+            View on {platformName} →
           </a>
         ) : (
           <span style={styles.ctaDisabled} title="Missing or invalid Amazon link">

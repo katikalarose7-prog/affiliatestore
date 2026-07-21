@@ -58,6 +58,38 @@ const NETWORK_HOSTS = [
   "vc-cdn.com",
 ];
 
+// Display names for each recognized merchant domain, used to build
+// "View on X" CTA text automatically from the link itself.
+const PLATFORM_NAMES = {
+  "amazon.in": "Amazon",
+  "amazon.com": "Amazon",
+  "amzn.in": "Amazon",
+  "amzn.to": "Amazon",
+  "myntra.com": "Myntra",
+  "flipkart.com": "Flipkart",
+  "ajio.com": "Ajio",
+};
+
+/**
+ * Returns a display name ("Amazon", "Myntra", "Flipkart", "Ajio") based
+ * on the link's domain, or null if it can't be determined (e.g. the
+ * link is wrapped in a network redirect domain rather than the direct
+ * merchant domain — in that case, use a `store`/`platform` field from
+ * your product data instead, if you have one).
+ */
+export function getPlatformName(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const host = normalizeHost(new URL(rawUrl).hostname);
+    const match = Object.keys(PLATFORM_NAMES).find(
+      (h) => host === h || host.endsWith(`.${h}`)
+    );
+    return match ? PLATFORM_NAMES[match] : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeHost(hostname) {
   return hostname.replace(/^www\./, "");
 }
