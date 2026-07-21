@@ -258,7 +258,9 @@ export default function ProductCard({ product: rawProduct }) {
   // reliable — works even if the link is wrapped by a network
   // redirect domain); falls back to detecting the platform from the
   // link's own domain when no `store` field is present.
-  const platformName = store || getPlatformName(taggedLink) || "Store";
+  const rawPlatformName = store || getPlatformName(taggedLink) || "Store";
+  const platformName =
+    rawPlatformName.charAt(0).toUpperCase() + rawPlatformName.slice(1).toLowerCase();
 
   return (
     <article
