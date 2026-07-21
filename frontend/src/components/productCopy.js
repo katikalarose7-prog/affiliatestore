@@ -1,35 +1,37 @@
 /**
- * productCopy.js
+ * productCopy.js (v3 — attribute-driven, per-item copy)
  *
- * IMPORTANT CONTEXT (Amazon Associates rejection — "content is
- * insufficient"): the original version of this file generated the
- * exact same templated sentence for every product, just swapping in
- * the title/category — e.g. "X is a solid pick for your wardrobe,
- * chosen for fit, material, and value." repeated hundreds of times
- * with minor word swaps. That reads as duplicate/thin content to a
- * reviewer or crawler, and is a very plausible contributor to the
- * rejection you received.
+ * The point of this version: two products in the same category should
+ * NOT read like the same sentence with a noun swapped. It pulls from
+ * whatever real attributes your product data actually has — brand,
+ * material, fit, color, sleeveType, neckType, occasion, features[],
+ * careInstructions, sizeNote — and builds sentences whose STRUCTURE
+ * changes depending on which attributes exist, not just the words.
  *
- * This version:
- *  1. Prefers REAL fields from your product data (material, fit,
- *     occasion, careInstructions, sizingNote) when present, so the
- *     generated text is actually specific to that product, not just
- *     the category.
- *  2. Falls back to a shorter, honest line (not a padded paragraph)
- *     when no specific attributes are available — padding a sentence
- *     to sound substantial without real information is exactly what
- *     got flagged.
- *  3. Logs a console warning whenever a card is rendering GENERATED
- *     copy instead of authored copy, so you have a visible signal
- *     (in dev tools) of which products still need a human-written
- *     description before your next Associates application/review.
+ * Recommended fields to add to your product schema (all optional —
+ * used opportunistically, the more you have the more specific the
+ * copy gets):
+ *   brand            "Libas"
+ *   material         "cotton", "rayon blend"
+ *   fit              "straight", "A-line", "relaxed"
+ *   color             "sage green"
+ *   sleeveType        "three-quarter sleeve"
+ *   neckType          "mandarin collar"
+ *   occasion          "festive wear", "daily office wear"
+ *   features          ["hand-embroidered yoke", "side pockets"]
+ *   careInstructions  "Hand wash separately in cold water"
+ *   sizeNote          "Runs true to size" / "Order one size up"
  *
- * The real fix for the content-quality violation is authored content:
- * add `description`, `bestFor`, `pros`, `cons` (and ideally `material`,
- * `fit`, `occasion`, `careInstructions`) to your product records
- * written by a person who's actually looked at the product. This file
- * only prevents a card from looking broken while that's in progress —
- * it is not a substitute for real editorial content at scale.
+ * Even with all of these filled in, this is still automated copy.
+ * Amazon's actual bar is content a real person wrote after evaluating
+ * the product — this generator narrows the gap and stops the site
+ * from reading as duplicate filler, but authored `description`,
+ * `bestFor`, `pros`, `cons` per product (at minimum for your top
+ * sellers) is what actually resolves a content-quality rejection.
+ *
+ * console.warn fires whenever a card falls back to generated content,
+ * so you can see in dev tools exactly which products still need a
+ * human write-up.
  */
 
 const CATEGORY_HOOKS = {
@@ -47,71 +49,119 @@ function cleanTitle(title, category) {
 }
 
 /**
- * Builds a description. Uses real product-specific attributes when
- * available (material, fit, occasion) so the text is genuinely about
- * THIS product, not a template. Returns { text, isGenerated }.
+ * Builds a 2–4 sentence description whose shape depends on which
+ * attributes are present, so products don't converge on one template.
  */
 export function generateDescription(product) {
-  const { title, category, rating, material, fit, occasion } = product;
+  const {
+    title, category, rating, brand, material, fit, color,
+    sleeveType, neckType, occasion, features,
+  } = product;
   const t = cleanTitle(title, category);
   const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
 
-  const specifics = [];
-  if (material) specifics.push(`made from ${material}`);
-  if (fit) specifics.push(`a ${fit} fit`);
-  if (occasion) specifics.push(`suited to ${occasion}`);
+  const sentences = [];
 
-  if (specifics.length > 0) {
-    const ratingClause =
-      rating && rating >= 4 ? ` Rated ${rating}/5 by buyers who've used it.` : "";
-    return {
-      text: `${t} features ${specifics.join(", ")}.${ratingClause}`,
-      isGenerated: true,
-    };
+  // Sentence 1: identity — varies based on brand/color/material availability
+  const idBits = [];
+  if (brand) idBits.push(`from ${brand}`);
+  if (color) idBits.push(`in ${color}`);
+  if (material) idBits.push(`crafted from ${material}`);
+  sentences.push(
+    idBits.length > 0 ? `${t} ${idBits.join(", ")}.` : `${t}.`
+  );
+
+  // Sentence 2: construction details — only if we have them
+  const constructionBits = [];
+  if (fit) constructionBits.push(`a ${fit} fit`);
+  if (sleeveType) constructionBits.push(sleeveType);
+  if (neckType) constructionBits.push(neckType);
+  if (constructionBits.length > 0) {
+    sentences.push(
+      `Cut with ${constructionBits.join(" and ")} for a considered, wearable shape.`
+    );
   }
 
-  // No specific attributes to draw on — keep it short and honest
-  // rather than padding out a generic paragraph.
-  return {
-    text: `${t} — a ${hook.hook} option worth a look on Amazon.in. Full details on the product page.`,
-    isGenerated: true,
-  };
-}
+  // Sentence 3: standout feature — only if provided, picks ONE so it
+  // doesn't read as a dumped list
+  if (Array.isArray(features) && features.length > 0) {
+    sentences.push(`Notable detail: ${features[0]}.`);
+  }
 
-export function generateBestFor(product) {
-  const { category } = product;
-  const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
-  return {
-    text: `Shoppers looking for ${category?.toLowerCase() || "something"} for ${hook.occasions}.`,
-    isGenerated: true,
-  };
-}
+  // Sentence 4: occasion / use-case
+  if (occasion) {
+    sentences.push(`Works well for ${occasion}.`);
+  } else {
+    sentences.push(`Fits naturally into ${hook.occasions}.`);
+  }
 
-export function generateProsCons(product) {
-  const { rating } = product;
-  const pros = [];
-  const cons = [];
-  if (rating && rating >= 4) pros.push(`Highly rated at ${rating}/5`);
-  pros.push("Sold and fulfilled via Amazon.in");
-  cons.push("Availability can change quickly");
-  return { pros, cons, isGenerated: true };
+  // Sentence 5: rating, only if genuinely strong
+  if (rating && rating >= 4) {
+    sentences.push(`Rated ${rating}/5 by buyers so far.`);
+  }
+
+  const isFullyGeneric = !brand && !material && !fit && !color && !occasion &&
+    (!Array.isArray(features) || features.length === 0);
+
+  return { text: sentences.join(" "), isGenerated: true, isFullyGeneric };
 }
 
 /**
- * Normalizes a raw product record so every card has content to show —
- * while flagging (via console.warn) which cards are relying on
- * generated filler rather than authored copy, so you can track and
- * prioritize which products still need real editorial content.
+ * "Best for" line — prefers real occasion/fit/sizeNote signals over
+ * the generic category hook.
  */
+export function generateBestFor(product) {
+  const { category, occasion, fit, sizeNote } = product;
+  const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
+
+  const audienceBits = [];
+  if (occasion) audienceBits.push(occasion);
+  if (fit) audienceBits.push(`those who prefer a ${fit} fit`);
+
+  let text;
+  if (audienceBits.length > 0) {
+    text = `Shoppers wanting ${audienceBits.join(" and ")}.`;
+  } else {
+    text = `Shoppers looking for ${category?.toLowerCase() || "something"} for ${hook.occasions}.`;
+  }
+  if (sizeNote) text += ` Note: ${sizeNote}.`;
+
+  return { text, isGenerated: true };
+}
+
+/**
+ * Pros/cons — pulls from features[]/careInstructions/sizeNote when
+ * present instead of only generic marketplace boilerplate.
+ */
+export function generateProsCons(product) {
+  const { rating, features, careInstructions, sizeNote } = product;
+  const pros = [];
+  const cons = [];
+
+  if (rating && rating >= 4) pros.push(`Highly rated at ${rating}/5`);
+  if (Array.isArray(features) && features.length > 1) {
+    pros.push(features[1]);
+  }
+  pros.push("Sold and fulfilled via Amazon.in");
+
+  if (careInstructions) cons.push(`Care: ${careInstructions}`);
+  if (sizeNote) cons.push(sizeNote);
+  if (cons.length === 0) cons.push("Availability can change quickly");
+
+  return { pros, cons, isGenerated: true };
+}
+
 export function withFallbackCopy(product) {
   const title = cleanTitle(product.title, product.category);
 
   let description = product.description?.trim();
   let descriptionIsGenerated = false;
+  let descriptionIsFullyGeneric = false;
   if (!description) {
     const gen = generateDescription(product);
     description = gen.text;
     descriptionIsGenerated = true;
+    descriptionIsFullyGeneric = gen.isFullyGeneric;
   }
 
   let bestFor = product.bestFor?.trim();
@@ -133,12 +183,14 @@ export function withFallbackCopy(product) {
     (descriptionIsGenerated || bestForIsGenerated || prosConsResult.isGenerated) &&
     typeof console !== "undefined"
   ) {
+    const severity = descriptionIsFullyGeneric ? "HIGH PRIORITY" : "generated";
     console.warn(
-      `[productCopy] "${title}" (id: ${product._id || "unknown"}) is showing ` +
-        `generated fallback content instead of authored copy. Add real ` +
-        `description/bestFor/pros/cons to this product's data before your ` +
-        `next Amazon Associates review — generated filler across many ` +
-        `products is a likely cause of a "content is insufficient" rejection.`
+      `[productCopy] (${severity}) "${title}" (id: ${product._id || "unknown"}) is ` +
+        `showing generated content. ${
+          descriptionIsFullyGeneric
+            ? "No attributes (brand/material/fit/color/occasion/features) were available at all — this is the thinnest, most generic version of the copy and the most likely to read as duplicate content."
+            : "Some real attributes were used, but authored copy is still stronger."
+        } Add real description/bestFor/pros/cons (or at least brand/material/fit/occasion/features) before your next Amazon Associates review.`
     );
   }
 
