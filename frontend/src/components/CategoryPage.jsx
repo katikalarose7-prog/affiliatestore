@@ -9,7 +9,6 @@
 
 import React, { useEffect, useState } from "react";
 import ProductCard from "./ProductCard";
-
 // Buying guide content per category — customise for your categories
 const BUYING_GUIDES = {
   Electronics: {
@@ -98,11 +97,17 @@ export default function CategoryPage({ category, products = [] }) {
         {products.length === 0 ? (
           <p>No products found in this category.</p>
         ) : (
-          <div className="grid">
-            {products.map((product) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
-          </div>
+          <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+    gap: 16,
+  }}
+>
+  {products.map((product) => (
+    <ProductCard key={product._id} product={product} />
+  ))}
+</div>
         )}
       </section>
 

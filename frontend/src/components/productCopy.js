@@ -39,9 +39,12 @@ const CATEGORY_HOOKS = {
   },
 };
 
-function cleanTitle(title) {
-  if (!title || !title.trim()) return "Product";
-  return title.trim();
+function cleanTitle(title, category) {
+  if (title && title.trim()) return title.trim();
+  // No generic "Product" placeholder — fall back to something
+  // category-specific so the title never reads as a filler word.
+  const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
+  return category ? `${category} Pick` : "Featured Pick";
 }
 
 /**
@@ -50,7 +53,7 @@ function cleanTitle(title) {
  */
 export function generateDescription(product) {
   const { title, category, rating } = product;
-  const t = cleanTitle(title);
+  const t = cleanTitle(title, category);
   const hook = CATEGORY_HOOKS[category] || CATEGORY_HOOKS.Default;
 
   const ratingClause =
@@ -78,18 +81,14 @@ export function generateBestFor(product) {
  * never looks broken or half-filled.
  */
 export function generateProsCons(product) {
-  const { rating, originalPrice, price } = product;
+  const { rating } = product;
   const pros = [];
   const cons = [];
 
   if (rating && rating >= 4) pros.push(`Highly rated at ${rating}/5`);
-  if (originalPrice && price && originalPrice > price) {
-    const pct = Math.round(((originalPrice - price) / originalPrice) * 100);
-    pros.push(`${pct}% off the listed price`);
-  }
   pros.push("Ships and is sold via Amazon.in");
 
-  cons.push("Availability and price can change quickly");
+  cons.push("Availability can change quickly");
 
   return { pros, cons };
 }
@@ -99,7 +98,7 @@ export function generateProsCons(product) {
  * Call this once when the product list is fetched, or inline in ProductCard.
  */
 export function withFallbackCopy(product) {
-  const title = cleanTitle(product.title);
+  const title = cleanTitle(product.title, product.category);
   const description =
     product.description && product.description.trim()
       ? product.description.trim()
