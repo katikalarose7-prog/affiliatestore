@@ -19,7 +19,7 @@
  *   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
  */
 
-import EARNKARO_ADS from "./earnkaroAds.config";
+import EARNKARO_ADS from "./Earnkaroads.config";
 
 const SIDEBAR_ADS = EARNKARO_ADS.filter((ad) => ad.placement.includes("sidebar"));
 

@@ -17,7 +17,7 @@
  *   ))}
  */
 
-import EARNKARO_ADS from "./earnkaroAds.config";
+import EARNKARO_ADS from "./Earnkaroads.config";
 
 const INLINE_ADS = EARNKARO_ADS.filter((ad) => ad.placement.includes("inline"));
 
