@@ -722,6 +722,8 @@ input:focus, select:focus, textarea:focus { outline: none; }
   .admin-sidebar { display:none; }
   .admin-page { flex-direction:column; }
   .admin-main { padding-bottom:80px; }
+    .home-main-layout > .ek-sidebar { display: none; }
+
 }
 
 /* ── Mobile (≤768px) ────────────────────────────────── */
@@ -997,8 +999,15 @@ input:focus, select:focus, textarea:focus { outline: none; }
 .home-view-btn.active { background:var(--bg2); color:var(--text); }
 
 /* ── Main layout: sidebar + grid ─────────────────── */
+/* REPLACE WITH: */
 .home-main-layout {
   display:flex; gap:20px; align-items:flex-start;
+}
+.home-main-layout > .ek-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  position: sticky;
+  top: calc(var(--nav-total) + 8px);
 }
 .home-grid-col { flex:1; min-width:0; }
 
@@ -1063,6 +1072,8 @@ input:focus, select:focus, textarea:focus { outline: none; }
   .home-trust-body { font-size:12px; }
   /* Chip row hidden on mobile (too cramped) */
   .home-chip { display:none; }
+    .home-main-layout > .ek-sidebar { display: none; }
+
 }
 
 @media(max-width:480px) {
