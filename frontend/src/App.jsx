@@ -4,7 +4,7 @@ import Home from './pages/Home'
 import Admin from './pages/Admin'
 import AdminLogin from './pages/AdminLogin'
 import PWAInstallBanner from './components/PWAInstallBanner'
-// Inside your App return:
+import EarnKaroPopup from './components/ads/EarnKaroPopup'
 import {
   PrivacyPolicy,
   Terms,
@@ -22,18 +22,19 @@ export default function App() {
   return (
     <>
       <Routes>
-        <Route path="/"                    element={<Home />} />
-        <Route path="/admin/login"         element={<AdminLogin />} />
-        <Route path="/admin"               element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-        {/* Compliance pages */}
-        <Route path="/privacy-policy"      element={<PrivacyPolicy />} />
-        <Route path="/terms"               element={<Terms />} />
-        <Route path="/affiliate-disclosure"element={<AffiliateDisclosure />} />
-        <Route path="/about"               element={<About />} />
-        <Route path="/contact"             element={<Contact />} />
-        <Route path="*"                    element={<Navigate to="/" replace />} />
-        
+        <Route path="/"                     element={<Home />} />
+        <Route path="/admin/login"          element={<AdminLogin />} />
+        <Route path="/admin"                element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="/privacy-policy"       element={<PrivacyPolicy />} />
+        <Route path="/terms"                element={<Terms />} />
+        <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
+        <Route path="/about"                element={<About />} />
+        <Route path="/contact"              element={<Contact />} />
+        <Route path="*"                     element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* ✅ Outside Routes — renders on every page */}
+      <EarnKaroPopup />
       <PWAInstallBanner />
     </>
   )

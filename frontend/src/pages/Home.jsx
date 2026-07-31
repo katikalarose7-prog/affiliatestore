@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import axios from 'axios'
-import { SlidersHorizontal, LayoutGrid, List, RotateCcw, TrendingUp, Sparkles, Clock } from 'lucide-react'
+import { SlidersHorizontal, LayoutGrid, List, RotateCcw } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import ProductCard from '../components/ProductCard'
 import FilterSidebar from '../components/FilterSidebar'
@@ -9,6 +9,9 @@ import Footer from '../components/Footer'
 import { API } from '../config'
 import { useTheme } from '../context/Themecontext'
 import { getCategoriesForStore } from '../config/stores'
+import EarnKaroPopup from '../components/ads/EarnKaroPopup'
+import EarnKaroInlineAd from '../components/ads/EarnKaroInlineAd'
+import EarnKaroSidebar from '../components/ads/EarnKaroSidebar'
 
 /* ── Skeleton card ─────────────────────────────────── */
 function SkeletonCard() {
@@ -113,7 +116,7 @@ export default function Home() {
     ]).then(([b, f]) => { setBanners(b.data); setFeatured(f.data) })
   }, [])
 
-  /* Fetch products — all 3 navbar rows wired */
+  /* Fetch products */
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
@@ -143,7 +146,7 @@ export default function Home() {
     setActiveFilter(null); setActiveAudience('all')
     try { localStorage.setItem('bdp_store', s) } catch {}
   }
-  const handleFilterChange  = tag => setActiveFilter(tag === activeFilter ? null : tag)
+  const handleFilterChange   = tag => setActiveFilter(tag === activeFilter ? null : tag)
   const handleAudienceChange = aud => { setActiveAudience(aud); setFilters(f => ({...f, audience:aud})) }
 
   const isFiltered = filters.category !== 'All' || filters.audience !== 'all' ||
@@ -159,7 +162,6 @@ export default function Home() {
   const isDefaultView = !isFiltered
   const showFeatured  = featured.length > 0 && isDefaultView
 
-  /* Active filter label */
   const FILTER_LABELS = {
     bestseller:'🔥 Best Sellers', under199:'💰 Under ₹199',
     under499:'🏷️ Under ₹499',   under999:'🎯 Under ₹999',
@@ -193,13 +195,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Stats bar — only on default home ── */}
+      {/* ── Stats bar ── */}
       {isDefaultView && <StatsBar/>}
 
       {/* ── Page body ── */}
       <div className="home-body">
 
-        {/* ── Featured picks section ── */}
+        {/* ── Featured picks ── */}
         {showFeatured && (
           <section className="home-section">
             <SectionHeader
@@ -217,15 +219,14 @@ export default function Home() {
         {/* ── Main products section ── */}
         <section className="home-section">
 
-          {/* Section header — changes based on active filter */}
           {isFiltered ? (
             <SectionHeader
               icon={activeFilter ? FILTER_LABELS[activeFilter]?.split(' ')[0] : '🔍'}
               title={
-                debounced         ? `Results for "${debounced}"` :
-                activeFilter      ? FILTER_LABELS[activeFilter] :
+                debounced              ? `Results for "${debounced}"` :
+                activeFilter           ? FILTER_LABELS[activeFilter] :
                 filters.category !== 'All' ? filters.category :
-                activeAudience !== 'all' ? `${activeAudience.charAt(0).toUpperCase() + activeAudience.slice(1)}'s Products` :
+                activeAudience !== 'all'   ? `${activeAudience.charAt(0).toUpperCase() + activeAudience.slice(1)}'s Products` :
                 'Filtered Products'
               }
               subtitle={loading ? 'Loading…' : `${products.length} products found`}
@@ -242,8 +243,6 @@ export default function Home() {
           {/* Toolbar */}
           <div className="home-toolbar">
             <div className="home-toolbar-left">
-
-              {/* Filter toggle */}
               <button
                 className={`home-filter-btn${showSidebar ? ' active' : ''}`}
                 onClick={() => setShowSidebar(v => !v)}
@@ -255,14 +254,12 @@ export default function Home() {
                 )}
               </button>
 
-              {/* Clear */}
               {isFiltered && (
                 <button className="home-clear-btn" onClick={clearFilters}>
                   <RotateCcw size={12}/> Clear all
                 </button>
               )}
 
-              {/* Active chips */}
               {[
                 filters.category !== 'All'  && { label: filters.category,  key:'category', clear:()=>setFilters(f=>({...f,category:'All'}))  },
                 activeAudience   !== 'all'  && { label: activeAudience,     key:'audience', clear:()=>setActiveAudience('all')                 },
@@ -280,8 +277,6 @@ export default function Home() {
               <span className="home-item-count">
                 {loading ? '…' : `${products.length} items`}
               </span>
-
-              {/* Sort */}
               <div className="home-sort-wrap">
                 <select className="home-sort-select"
                   value={sortBy} onChange={e => setSortBy(e.target.value)}>
@@ -290,8 +285,6 @@ export default function Home() {
                   <option value="rating">⭐ Top Rated</option>
                 </select>
               </div>
-
-              {/* View toggle */}
               <div className="home-view-toggle">
                 <button
                   className={`home-view-btn${viewMode==='grid'?' active':''}`}
@@ -307,10 +300,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Main layout: sidebar + grid */}
+          {/* Main layout: filter sidebar + grid + ad sidebar */}
           <div className="home-main-layout">
 
-            {/* Sidebar */}
+            {/* Filter sidebar */}
             <FilterSidebar
               filters={filters}
               onChange={setFilters}
@@ -342,22 +335,35 @@ export default function Home() {
                 </div>
               ) : (
                 <div className={viewMode==='grid' ? 'home-products-grid' : 'home-products-list'}>
-                  {products.map(p => <ProductCard key={p._id} product={p}/>)}
+                  {products.map((p, index) => (
+                    <Fragment key={p._id}>
+                      <ProductCard product={p} />
+                      {(index + 1) % 4 === 0 && viewMode === 'grid' && (
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <EarnKaroInlineAd index={Math.floor(index / 4)} />
+                        </div>
+                      )}
+                    </Fragment>
+                  ))}
                 </div>
               )}
             </div>
+
+            {/* EarnKaro ad sidebar */}
+            <EarnKaroSidebar />
+
           </div>
         </section>
 
-        {/* ── About / trust section — shown on default home only ── */}
+        {/* ── Trust section ── */}
         {isDefaultView && !loading && (
           <section className="home-trust-section">
             <div className="home-trust-grid">
               {[
-                { icon:'🔍', title:'Carefully Curated',    body:'Every product is handpicked by our team for quality, value, and genuine buyer satisfaction.' },
+                { icon:'🔍', title:'Carefully Curated',     body:'Every product is handpicked by our team for quality, value, and genuine buyer satisfaction.' },
                 { icon:'💰', title:'Honest Affiliate Links', body:'We earn a small commission when you buy — at zero extra cost to you. This keeps the site free.' },
-                { icon:'⭐', title:'Real Ratings Only',     body:'Ratings shown are based on verified buyer reviews — never inflated or fabricated.' },
-                { icon:'🔄', title:'Updated Daily',         body:'Our product list refreshes every day so you always see current deals and new arrivals.' },
+                { icon:'⭐', title:'Real Ratings Only',      body:'Ratings shown are based on verified buyer reviews — never inflated or fabricated.' },
+                { icon:'🔄', title:'Updated Daily',          body:'Our product list refreshes every day so you always see current deals and new arrivals.' },
               ].map(item => (
                 <div key={item.title} className="home-trust-card">
                   <span className="home-trust-icon">{item.icon}</span>
@@ -370,6 +376,9 @@ export default function Home() {
         )}
 
       </div>
+
+      {/* EarnKaro popup — outside home-body, before Footer */}
+      <EarnKaroPopup />
 
       <Footer/>
     </div>
