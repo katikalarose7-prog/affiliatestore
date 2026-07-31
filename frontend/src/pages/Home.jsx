@@ -1,5 +1,3 @@
-import EarnKaroSidebar from '../components/ads/EarnKaroSidebar';
-
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { SlidersHorizontal, LayoutGrid, List, RotateCcw, TrendingUp, Sparkles, Clock } from 'lucide-react'
@@ -11,8 +9,6 @@ import Footer from '../components/Footer'
 import { API } from '../config'
 import { useTheme } from '../context/Themecontext'
 import { getCategoriesForStore } from '../config/stores'
-import EarnKaroPopup from '../components/ads/EarnKaroPopup';
-import EarnKaroInlineAd from '../components/ads/EarnKaroInlineAd';
 
 /* ── Skeleton card ─────────────────────────────────── */
 function SkeletonCard() {
@@ -345,20 +341,11 @@ export default function Home() {
                   </button>
                 </div>
               ) : (
-
-// Then replace the products.map block:
-<div className={viewMode==='grid' ? 'home-products-grid' : 'home-products-list'}>
- {products.map((p, index) => (
-  <React.Fragment key={p._id}>
-    <ProductCard product={p} />
-    {(index + 1) % 4 === 0 && <EarnKaroInlineAd index={Math.floor(index / 4)} />}
-  </React.Fragment>
-))}
-</div>
+                <div className={viewMode==='grid' ? 'home-products-grid' : 'home-products-list'}>
+                  {products.map(p => <ProductCard key={p._id} product={p}/>)}
+                </div>
               )}
             </div>
-              <EarnKaroSidebar />
-
           </div>
         </section>
 
@@ -383,7 +370,6 @@ export default function Home() {
         )}
 
       </div>
-        <EarnKaroPopup />
 
       <Footer/>
     </div>

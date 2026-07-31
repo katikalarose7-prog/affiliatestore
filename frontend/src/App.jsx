@@ -4,7 +4,7 @@ import Home from './pages/Home'
 import Admin from './pages/Admin'
 import AdminLogin from './pages/AdminLogin'
 import PWAInstallBanner from './components/PWAInstallBanner'
-import EarnKaroPopup from './components/ads/EarnKaroPopup'
+import EarnKaroPopup from "./EarnKaroPopup";
 // Inside your App return:
 import {
   PrivacyPolicy,
@@ -33,8 +33,7 @@ export default function App() {
         <Route path="/about"               element={<About />} />
         <Route path="/contact"             element={<Contact />} />
         <Route path="*"                    element={<Navigate to="/" replace />} />
-        <EarnKaroPopup />
-
+        
       </Routes>
       <PWAInstallBanner />
     </>
