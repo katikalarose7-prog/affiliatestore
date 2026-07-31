@@ -348,14 +348,12 @@ export default function Home() {
 
 // Then replace the products.map block:
 <div className={viewMode==='grid' ? 'home-products-grid' : 'home-products-list'}>
-  {products.map((p, index) => (
-    <>
-      <ProductCard key={p._id} product={p}/>
-      {(index + 1) % 4 === 0 && viewMode === 'grid' && (
-        <EarnKaroInlineAd index={Math.floor(index / 4)} />
-      )}
-    </>
-  ))}
+ {products.map((p, index) => (
+  <React.Fragment key={p._id}>
+    <ProductCard product={p} />
+    {(index + 1) % 4 === 0 && <EarnKaroInlineAd index={Math.floor(index / 4)} />}
+  </React.Fragment>
+))}
 </div>
               )}
             </div>
