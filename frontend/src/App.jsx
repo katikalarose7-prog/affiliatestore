@@ -4,7 +4,7 @@ import Home from './pages/Home'
 import Admin from './pages/Admin'
 import AdminLogin from './pages/AdminLogin'
 import PWAInstallBanner from './components/PWAInstallBanner'
-import EarnKaroPopup from "./EarnKaroPopup";
+import EarnKaroPopup from './components/ads/EarnKaroPopup'
 // Inside your App return:
 import {
   PrivacyPolicy,
