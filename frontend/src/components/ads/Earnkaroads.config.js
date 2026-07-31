@@ -19,7 +19,7 @@ const EARNKARO_ADS = [
     description: "Electronics, fashion, home & more. Limited time deals.",
     imageUrl:    "https://via.placeholder.com/400x200?text=Amazon+Deal",
     badge:       "HOT DEAL",
-    earnkaroLink: "https://earnkaro.com/your-amazon-link", // ← replace
+    earnkaroLink: "https://myntr.it/DCNWCG6", // ← replace
     placement:   ["popup", "inline", "sidebar"],
   },
   {
@@ -31,7 +31,7 @@ const EARNKARO_ADS = [
     description: "Top brands in clothing, footwear & accessories.",
     imageUrl:    "https://via.placeholder.com/400x200?text=Amazon+Fashion",
     badge:       "FASHION",
-    earnkaroLink: "https://earnkaro.com/your-amazon-fashion-link", // ← replace
+    earnkaroLink: "https://myntr.it/cHYH5ms", // ← replace
     placement:   ["inline", "sidebar"],
   },
 
