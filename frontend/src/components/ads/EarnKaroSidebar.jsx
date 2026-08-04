@@ -19,51 +19,53 @@
  *   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
  */
 
-import EARNKARO_ADS from "./Earnkaroads.config";
+import { getAdsForPlacement } from "./earnkaroAds.config";
 
-const SIDEBAR_ADS = EARNKARO_ADS.filter((ad) => ad.placement.includes("sidebar"));
+const SIDEBAR_ADS = getAdsForPlacement("sidebar");
 
 export default function EarnKaroSidebar() {
   if (!SIDEBAR_ADS.length) return null;
+
+  // Show just one ad here — rotates by day so it isn't the same
+  // brand every visit, but never stacks multiple ads at once.
+  const dayIndex = new Date().getDate() % SIDEBAR_ADS.length;
+  const ad = SIDEBAR_ADS[dayIndex];
 
   return (
     <aside className="ek-sidebar">
       <style>{styles}</style>
 
-      <p className="ek-sidebar-heading">Today's Top Deals</p>
+      <p className="ek-sidebar-heading">Today's Top Deal</p>
 
-      {SIDEBAR_ADS.map((ad) => (
-        <a
-          key={ad.id}
-          href={ad.earnkaroLink}
-          target="_blank"
-          rel="nofollow sponsored noopener noreferrer"
-          className="ek-sidebar-card"
-        >
-          {/* Brand strip */}
-          <div className="ek-sidebar-brand-strip" style={{ background: ad.brandColor }}>
-            <img src={ad.brandLogo} alt={ad.brand} className="ek-sidebar-logo" />
-            {ad.badge && (
-              <span className="ek-sidebar-badge">{ad.badge}</span>
-            )}
-          </div>
+      <a
+        href={ad.earnkaroLink}
+        target="_blank"
+        rel="nofollow sponsored noopener noreferrer"
+        className="ek-sidebar-card"
+      >
+        {/* Brand strip */}
+        <div className="ek-sidebar-brand-strip" style={{ background: ad.brandColor }}>
+          <img src={ad.brandLogo} alt={ad.brand} className="ek-sidebar-logo" />
+          {ad.badge && (
+            <span className="ek-sidebar-badge">{ad.badge}</span>
+          )}
+        </div>
 
-          {/* Image */}
-          <div className="ek-sidebar-image-wrap">
-            <img src={ad.imageUrl} alt={ad.title} className="ek-sidebar-image" />
-          </div>
+        {/* Image */}
+        <div className="ek-sidebar-image-wrap">
+          <img src={ad.imageUrl} alt={ad.title} className="ek-sidebar-image" />
+        </div>
 
-          {/* Text */}
-          <div className="ek-sidebar-body">
-            <p className="ek-sidebar-title">{ad.title}</p>
-            <p className="ek-sidebar-desc">{ad.description}</p>
-            <span className="ek-sidebar-cta" style={{ color: ad.brandColor }}>
-              Shop Now →
-            </span>
-            <p className="ek-sidebar-disclosure">Sponsored · via EarnKaro</p>
-          </div>
-        </a>
-      ))}
+        {/* Text */}
+        <div className="ek-sidebar-body">
+          <p className="ek-sidebar-title">{ad.title}</p>
+          <p className="ek-sidebar-desc">{ad.description}</p>
+          <span className="ek-sidebar-cta" style={{ color: ad.brandColor }}>
+            Shop Now →
+          </span>
+          <p className="ek-sidebar-disclosure">Sponsored · via EarnKaro</p>
+        </div>
+      </a>
     </aside>
   );
 }

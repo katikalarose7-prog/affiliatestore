@@ -37,7 +37,7 @@ const EARNKARO_ADS = [
     description: "Electronics, fashion, home & more. Limited time deals.",
     imageUrl:    "https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=400&h=200&fit=crop",
     badge:       "HOT DEAL",
-    earnkaroLink: "PASTE_YOUR_AMAZON_EARNKARO_LINK_HERE",
+    earnkaroLink: "PASTE_YOUR_AMAZON_EARNKARO_LINK_HERE", // TODO: replace before going live
     placement:   ["popup", "inline", "sidebar"],
   },
 
@@ -69,5 +69,20 @@ const EARNKARO_ADS = [
     placement:   ["popup", "inline", "sidebar"],
   },
 ];
+
+/**
+ * Returns only the ads that (a) are tagged for the given placement
+ * ("popup" | "inline" | "sidebar") and (b) have a real EarnKaro link
+ * filled in — so an unfinished "PASTE_YOUR_..._LINK_HERE" entry never
+ * gets shown to a visitor.
+ */
+export function getAdsForPlacement(placement) {
+  return EARNKARO_ADS.filter(
+    (ad) =>
+      ad.placement.includes(placement) &&
+      ad.earnkaroLink &&
+      !ad.earnkaroLink.startsWith("PASTE_YOUR_")
+  );
+}
 
 export default EARNKARO_ADS;
