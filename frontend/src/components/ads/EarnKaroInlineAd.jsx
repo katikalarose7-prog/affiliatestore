@@ -1,208 +1,168 @@
 /**
- * EarnKaroPopup.jsx
+ * EarnKaroInlineAd.jsx
  *
- * Shows a deal popup 2 seconds after the site loads.
- * Rotates through popup-tagged ads from your config.
- * Remembers dismissal for 24 hours (localStorage).
- *
- * Usage:
- *   import EarnKaroPopup from "./EarnKaroPopup";
- *   // Add once in App.jsx or your root layout:
- *   <EarnKaroPopup />
+ * Sponsored deal card shown between product rows in the grid
+ * (used in Home.jsx after every 4th product).
  */
 
-import { useState, useEffect } from "react";
-import EARNKARO_ADS from "./earnkaroAds.config";
+import { getAdsForPlacement } from "./earnkaroAds.config";
 
-const POPUP_ADS    = EARNKARO_ADS.filter((ad) => ad.placement.includes("popup"));
-const DISMISS_KEY  = "ek_popup_dismissed_until";
-const DISMISS_HOURS = 24;
+const INLINE_ADS = getAdsForPlacement("inline");
 
-export default function EarnKaroPopup() {
-  const [visible, setVisible]   = useState(false);
-  const [adIndex, setAdIndex]   = useState(0);
-  const [closing, setClosing]   = useState(false);
+export default function EarnKaroInlineAd({ index = 0 }) {
+  if (!INLINE_ADS.length) return null;
 
-  useEffect(() => {
-    if (!POPUP_ADS.length) return;
-
-    // Check if dismissed recently
-    const dismissedUntil = localStorage.getItem(DISMISS_KEY);
-    if (dismissedUntil && Date.now() < Number(dismissedUntil)) return;
-
-    // Pick a random ad
-    setAdIndex(Math.floor(Math.random() * POPUP_ADS.length));
-
-    // Show after 2 seconds
-    const timer = setTimeout(() => setVisible(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const dismiss = () => {
-    setClosing(true);
-    setTimeout(() => {
-      setVisible(false);
-      setClosing(false);
-      // Remember for 24 hours
-      localStorage.setItem(
-        DISMISS_KEY,
-        String(Date.now() + DISMISS_HOURS * 60 * 60 * 1000)
-      );
-    }, 300);
-  };
-
-  if (!visible || !POPUP_ADS.length) return null;
-
-  const ad = POPUP_ADS[adIndex];
+  // Cycle through the available inline ads.
+  const ad = INLINE_ADS[index % INLINE_ADS.length];
 
   return (
-    <>
+    <div className="ek-inline-wrap">
       <style>{styles}</style>
 
-      {/* Backdrop */}
-      <div
-        className={`ek-backdrop ${closing ? "ek-fade-out" : "ek-fade-in"}`}
-        onClick={dismiss}
-      />
+      <div className="ek-inline-card">
 
-      {/* Popup */}
-      <div className={`ek-popup ${closing ? "ek-slide-out" : "ek-slide-in"}`}>
-
-        {/* Brand header */}
-        <div className="ek-popup-header" style={{ background: ad.brandColor }}>
-          <img src={ad.brandLogo} alt={ad.brand} className="ek-popup-logo" />
-          {ad.badge && <span className="ek-badge">{ad.badge}</span>}
-          <button className="ek-close" onClick={dismiss} aria-label="Close">✕</button>
+        {/* Label */}
+        <div className="ek-inline-label">
+          <span className="ek-inline-ad-tag">Sponsored Deal</span>
+          <span className="ek-inline-brand" style={{ color: ad.brandColor }}>
+            {ad.brand}
+          </span>
         </div>
 
-        {/* Deal image */}
-        <div className="ek-popup-image-wrap">
-          <img src={ad.imageUrl} alt={ad.title} className="ek-popup-image" />
+        {/* Image */}
+        <div className="ek-inline-image-wrap">
+          <img src={ad.imageUrl} alt={ad.title} className="ek-inline-image" />
+          {ad.badge && (
+            <span className="ek-inline-badge" style={{ background: ad.brandColor }}>
+              {ad.badge}
+            </span>
+          )}
         </div>
 
         {/* Content */}
-        <div className="ek-popup-body">
-          <h3 className="ek-popup-title">{ad.title}</h3>
-          <p className="ek-popup-desc">{ad.description}</p>
-          <p className="ek-disclosure">Ad · via EarnKaro</p>
+        <div className="ek-inline-content">
+          <div className="ek-inline-brand-row">
+            <img src={ad.brandLogo} alt={ad.brand} className="ek-inline-logo" />
+          </div>
+          <h4 className="ek-inline-title">{ad.title}</h4>
+          <p className="ek-inline-desc">{ad.description}</p>
 
           <a
             href={ad.earnkaroLink}
             target="_blank"
             rel="nofollow sponsored noopener noreferrer"
-            className="ek-popup-cta"
+            className="ek-inline-cta"
             style={{ background: ad.brandColor }}
-            onClick={dismiss}
           >
             Shop Now →
           </a>
-
-          <button className="ek-popup-skip" onClick={dismiss}>
-            No thanks, continue browsing
-          </button>
         </div>
+
       </div>
-    </>
+    </div>
   );
 }
 
 const styles = `
-  .ek-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    z-index: 9998;
+  .ek-inline-wrap {
+    grid-column: 1 / -1;  /* spans full grid width */
+    padding: 8px 0;
   }
-  .ek-fade-in  { animation: ekFadeIn  0.3s ease forwards; }
-  .ek-fade-out { animation: ekFadeOut 0.3s ease forwards; }
-  @keyframes ekFadeIn  { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes ekFadeOut { from { opacity: 1 } to { opacity: 0 } }
-
-  .ek-popup {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(420px, 92vw);
-    background: #fff;
-    border-radius: 16px;
-    overflow: hidden;
-    z-index: 9999;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  .ek-slide-in  { animation: ekSlideIn  0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-  .ek-slide-out { animation: ekSlideOut 0.3s ease forwards; }
-  @keyframes ekSlideIn  { from { opacity:0; transform:translate(-50%,-46%) } to { opacity:1; transform:translate(-50%,-50%) } }
-  @keyframes ekSlideOut { from { opacity:1; transform:translate(-50%,-50%) } to { opacity:0; transform:translate(-50%,-54%) } }
-
-  .ek-popup-header {
+  .ek-inline-card {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
+    align-items: stretch;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
     position: relative;
   }
-  .ek-popup-logo {
-    height: 28px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-  }
-  .ek-badge {
-    font-size: 10px;
-    font-weight: 800;
-    background: rgba(255,255,255,0.25);
-    color: #fff;
-    padding: 2px 8px;
-    border-radius: 20px;
-    letter-spacing: 0.08em;
-  }
-  .ek-close {
+  .ek-inline-label {
     position: absolute;
-    right: 12px; top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: #fff;
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 13px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
+    top: 10px; left: 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    z-index: 2;
   }
-  .ek-close:hover { background: rgba(255,255,255,0.35); }
-  .ek-popup-image-wrap { width: 100%; height: 160px; overflow: hidden; }
-  .ek-popup-image { width: 100%; height: 100%; object-fit: cover; }
-  .ek-popup-body {
-    padding: 16px 20px 20px;
+  .ek-inline-ad-tag {
+    font-size: 10px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .ek-inline-brand {
+    font-size: 11px;
+    font-weight: 700;
+    background: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  .ek-inline-image-wrap {
+    width: 280px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .ek-inline-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    min-height: 160px;
+  }
+  .ek-inline-badge {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+  }
+  .ek-inline-content {
+    flex: 1;
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    justify-content: center;
+    gap: 10px;
   }
-  .ek-popup-title { margin: 0; font-size: 17px; font-weight: 700; color: #1e293b; }
-  .ek-popup-desc  { margin: 0; font-size: 13.5px; color: #475569; line-height: 1.5; }
-  .ek-disclosure  { margin: 0; font-size: 10px; color: #94a3b8; }
-  .ek-popup-cta {
-    display: block;
+  .ek-inline-brand-row { display: flex; align-items: center; }
+  .ek-inline-logo { height: 24px; object-fit: contain; }
+  .ek-inline-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.3;
+  }
+  .ek-inline-desc {
+    margin: 0;
+    font-size: 13.5px;
+    color: #475569;
+    line-height: 1.5;
+  }
+  .ek-inline-cta {
+    display: inline-block;
     color: #fff;
-    text-align: center;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 15px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
     font-weight: 700;
     text-decoration: none;
-    margin-top: 4px;
+    align-self: flex-start;
     transition: opacity 0.15s;
   }
-  .ek-popup-cta:hover { opacity: 0.88; }
-  .ek-popup-skip {
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 12px;
-    cursor: pointer;
-    text-align: center;
-    padding: 4px;
-    text-decoration: underline;
+  .ek-inline-cta:hover { opacity: 0.88; }
+
+  @media (max-width: 600px) {
+    .ek-inline-card { flex-direction: column; }
+    .ek-inline-image-wrap { width: 100%; height: 160px; }
   }
-  .ek-popup-skip:hover { color: #64748b; }
 `;

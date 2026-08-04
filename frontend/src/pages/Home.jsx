@@ -9,7 +9,6 @@ import Footer from '../components/Footer'
 import { API } from '../config'
 import { useTheme } from '../context/Themecontext'
 import { getCategoriesForStore } from '../config/stores'
-import EarnKaroPopup from '../components/ads/EarnKaroPopup'
 import EarnKaroInlineAd from '../components/ads/EarnKaroInlineAd'
 import EarnKaroSidebar from '../components/ads/EarnKaroSidebar'
 
@@ -376,9 +375,6 @@ export default function Home() {
         )}
 
       </div>
-
-      {/* EarnKaro popup — outside home-body, before Footer */}
-      <EarnKaroPopup />
 
       <Footer/>
     </div>

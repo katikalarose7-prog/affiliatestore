@@ -275,6 +275,7 @@ export default function ProductCard({ product: rawProduct }) {
 
   return (
     <article
+    
       style={{
         ...styles.card,
         boxShadow: hovered ? "0 8px 24px rgba(15,23,42,0.12)" : styles.card.boxShadow,
