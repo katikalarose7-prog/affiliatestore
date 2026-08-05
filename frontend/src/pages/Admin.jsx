@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
 import {
   Plus, Pencil, Trash2, X, Search, Package,
-  BarChart3, LogOut, Star, Upload, Home,
+  BarChart3, LogOut, Star, Upload, Camera, Home,
   AlertCircle, CheckCircle, RefreshCw, ChevronLeft
 } from 'lucide-react'
 import { API, SITE_NAME } from '../config'
@@ -83,7 +83,8 @@ function ProductDrawer({ editId, initialForm, onClose, onSaved, token }) {
   const [imageFile,    setImageFile]    = useState(null)
   const [imagePreview, setImagePreview] = useState(initialForm._imagePreview || '')
   const [saving,       setSaving]       = useState(false)
-  const fileRef = useRef()
+  const galleryRef = useRef()
+  const cameraRef  = useRef()
   const cats = getCategoriesForStore(form.store)
   const authHeader = { Authorization:`Bearer ${token}` }
 
@@ -252,16 +253,35 @@ function ProductDrawer({ editId, initialForm, onClose, onSaved, token }) {
               </button>
             </div>
           ) : (
-            <div className="upload-zone" onClick={()=>fileRef.current?.click()}>
-              <Upload size={22} style={{margin:'0 auto 8px',opacity:.4,display:'block'}}/>
-              <div style={{fontSize:13,color:'var(--text2)',fontWeight:500}}>Tap to upload photo</div>
-              <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>
-                On mobile, you can take a photo directly 📷
+            <div style={{display:'flex',gap:10}}>
+              {/* Choose from Gallery/Photos — no "capture" attr, so mobile
+                  browsers show the normal picker (Photos, Files, etc.) */}
+              <div className="upload-zone" style={{flex:1}} onClick={()=>galleryRef.current?.click()}>
+                <Upload size={22} style={{margin:'0 auto 8px',opacity:.4,display:'block'}}/>
+                <div style={{fontSize:13,color:'var(--text2)',fontWeight:500}}>Upload from Gallery</div>
+                <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>
+                  Choose an existing photo
+                </div>
+              </div>
+
+              {/* Take Photo — capture="environment" opens the rear camera directly */}
+              <div className="upload-zone" style={{flex:1}} onClick={()=>cameraRef.current?.click()}>
+                <Camera size={22} style={{margin:'0 auto 8px',opacity:.4,display:'block'}}/>
+                <div style={{fontSize:13,color:'var(--text2)',fontWeight:500}}>Take Photo</div>
+                <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>
+                  Use your camera 📷
+                </div>
               </div>
             </div>
           )}
-          {/* capture="environment" = rear camera on mobile */}
-          <input ref={fileRef} type="file" accept="image/*"
+
+          {/* Gallery picker — plain file input, works on desktop + mobile */}
+          <input ref={galleryRef} type="file" accept="image/*"
+            style={{display:'none'}}
+            onChange={handleImageChange}/>
+
+          {/* Camera capture — only meaningful on mobile, opens rear camera */}
+          <input ref={cameraRef} type="file" accept="image/*"
             capture="environment" style={{display:'none'}}
             onChange={handleImageChange}/>
 
