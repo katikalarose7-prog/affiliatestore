@@ -35,9 +35,9 @@ const EARNKARO_ADS = [
     brandLogo:   "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
     title:       "Amazon Great Indian Sale",
     description: "Electronics, fashion, home & more. Limited time deals.",
-    imageUrl:    "https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=400&h=200&fit=crop",
+    imageUrl:    "../../assets/Eraser.png",
     badge:       "HOT DEAL",
-    earnkaroLink: "PASTE_YOUR_AMAZON_EARNKARO_LINK_HERE", // TODO: replace before going live
+    earnkaroLink: "https://link.amazon/B0eoTs0ik", // TODO: replace before going live
     placement:   ["popup", "inline", "sidebar"],
   },
 
