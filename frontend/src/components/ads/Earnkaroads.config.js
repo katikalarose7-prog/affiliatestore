@@ -1,3 +1,5 @@
+
+import EraserImg from '../../assets/Eraser.png';
 // Fix brand assignment — your myntr.it links are MYNTRA not Amazon
 const EARNKARO_ADS = [
 
@@ -35,7 +37,7 @@ const EARNKARO_ADS = [
     brandLogo:   "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
     title:       "Amazon Great Indian Sale",
     description: "Electronics, fashion, home & more. Limited time deals.",
-    imageUrl:    "../../assets/Eraser.png",
+    imageUrl:    EraserImg,
     badge:       "HOT DEAL",
     earnkaroLink: "https://link.amazon/B0eoTs0ik", // TODO: replace before going live
     placement:   ["popup", "inline", "sidebar"],
