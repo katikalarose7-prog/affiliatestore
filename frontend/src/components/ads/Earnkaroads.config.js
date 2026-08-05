@@ -21,18 +21,6 @@ const EARNKARO_ADS = [
     earnkaroLink: "https://myntr.it/VOJDq2l", // ✅ your real link
     placement:   ["popup", "inline", "sidebar"],
   },
-  {
-    id:          "myn-2",
-    brand:       "Myntra",
-    brandColor:  "#FF3F6C",
-    brandLogo:   "https://constant.myntassets.com/web/assets/img/logo_myntra.png",
-    title:       "Myntra Fashion — Min 60% Off",
-    description: "Clothing, footwear & accessories from top brands.",
-    imageUrl:    "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=200&fit=crop",
-    badge:       "FASHION",
-    earnkaroLink: "https://myntr.it/VOJDq2l", // ✅ your real link
-    placement:   ["inline", "sidebar"],
-  },
 
   // ── Amazon — PASTE YOUR EARNKARO AMAZON LINK ─────
   {
