@@ -1,5 +1,10 @@
 
 import EraserImg from '../../assets/Eraser.png';
+import Bangleimg from '../../assets/Bangles.png';
+import BedsheetImg from '../../assets/Bedsheet.png';
+import ShoeImg from '../../assets/Shoe.png';
+
+
 // Fix brand assignment — your myntr.it links are MYNTRA not Amazon
 const EARNKARO_ADS = [
 
@@ -11,7 +16,7 @@ const EARNKARO_ADS = [
     brandLogo:   "https://constant.myntassets.com/web/assets/img/logo_myntra.png",
     title:       "Myntra Sale — Up to 70% Off",
     description: "Top fashion brands at unbeatable prices.",
-    imageUrl:    "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&h=200&fit=crop",
+    imageUrl:    "Bangleimg",
     badge:       "HOT DEAL",
     earnkaroLink: "https://myntr.it/VOJDq2l", // ✅ your real link
     placement:   ["popup", "inline", "sidebar"],
@@ -51,9 +56,9 @@ const EARNKARO_ADS = [
     brandLogo:   "https://static-assets-web.flixcart.com/fk-p-linchpin-web/fk-cp-zion/img/flipkart-plus_8d85f4.png",
     title:       "Flipkart Big Saving Days",
     description: "Mobiles, TVs, appliances at jaw-dropping prices.",
-    imageUrl:    "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&h=200&fit=crop",
+    imageUrl:    "BedsheetImg",
     badge:       "LIMITED",
-    earnkaroLink: "PASTE_YOUR_FLIPKART_EARNKARO_LINK_HERE",
+    earnkaroLink: "https://fktr.in/8ymbjbs",
     placement:   ["inline", "sidebar"],
   },
 
@@ -65,9 +70,9 @@ const EARNKARO_ADS = [
     brandLogo:   "https://via.placeholder.com/80x30?text=AJIO",
     title:       "Ajio Big Bold Sale — 50–90% Off",
     description: "International & Indian brands. New styles added daily.",
-    imageUrl:    "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&h=200&fit=crop",
+    imageUrl:    "ShoeImg",
     badge:       "SALE",
-    earnkaroLink: "PASTE_YOUR_AJIO_EARNKARO_LINK_HERE",
+    earnkaroLink: "https://ajiio.in/JwoWNsx",
     placement:   ["popup", "inline", "sidebar"],
   },
 ];
