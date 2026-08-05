@@ -44,7 +44,7 @@ const EARNKARO_ADS = [
     description: "Electronics, fashion, home & more. Limited time deals.",
     imageUrl:    EraserImg,
     badge:       "HOT DEAL",
-    earnkaroLink: "https://link.amazon/B0eoTs0ik", // TODO: replace before going live
+    earnkaroLink: "https://link.amazon/B0eoTs0ik?tag=picksystore-21", // TODO: replace before going live
     placement:   ["popup", "inline", "sidebar"],
   },
 
