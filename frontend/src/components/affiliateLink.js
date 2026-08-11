@@ -25,7 +25,7 @@
  * confirm against a real generated link from your dashboard.
  */
 
-export const ASSOCIATES_TAG = "picksystore-21";
+export const ASSOCIATES_TAG = "picksystore03-21";
 
 const AMAZON_HOSTS = [
   "amazon.in",

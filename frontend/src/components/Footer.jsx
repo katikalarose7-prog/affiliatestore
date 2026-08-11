@@ -5,7 +5,7 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   const stores = [
-    { name:'Amazon',   href:'https://www.amazon.in?&linkCode=ll2&tag=picksystore-21&linkId=962f5eec78150f5c995a7b70f87525d2&ref_=as_li_ss_tl',    icon:'📦' },
+    { name:'Amazon',   href:'https://www.amazon.in?&linkCode=ll2&tag=picksystore03-21&linkId=962f5eec78150f5c995a7b70f87525d2&ref_=as_li_ss_tl',    icon:'📦' },
     { name:'Myntra',   href:'https://myntr.it/xKiyFgt',   icon:'👗' },
     { name:'Flipkart', href:'https://fktr.in/id2dasV',    icon:'🛒' },
     { name:'AJIO',     href:'https://ajiio.in/JFcuxqI',   icon:'✨' },
