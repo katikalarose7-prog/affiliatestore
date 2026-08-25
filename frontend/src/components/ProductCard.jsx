@@ -1,16 +1,14 @@
 /**
- * ProductCard.jsx (v7)
+ * ProductCard.jsx (v8)
  *
- * Changes from v6:
- * - Uses product.name (your actual schema field) instead of a
- *   non-existent product.title.
- * - No fallback "Category Pick" name — if it's genuinely empty
- *   (shouldn't happen, `name` is required in your schema), the
- *   heading is skipped rather than showing a made-up label.
- * - "Buying tip" and "Verdict" blocks render when aiCopy has them.
+ * Changes from v7:
+ * - Added a share button (top-right, next to the #Ad badge) that
+ *   uses navigator.share on mobile and falls back to copying the
+ *   tagged affiliate link to the clipboard on desktop.
  */
 
 import { useState, useRef, useLayoutEffect } from "react";
+import { Share2, Check } from "lucide-react";
 import { withFallbackCopy } from "./productCopy";
 import { buildAffiliateLink, getPlatformName } from "./affiliateLink";
 
@@ -41,6 +39,28 @@ const styles = {
     padding: "2px 7px",
     borderRadius: 4,
     zIndex: 2,
+  },
+  shareBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 2,
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    border: "none",
+    background: "rgba(255,255,255,0.92)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    boxShadow: "0 1px 3px rgba(15,23,42,0.2)",
+    color: "#334155",
+    padding: 0,
+  },
+  shareBtnDisabled: {
+    opacity: 0.4,
+    cursor: "not-allowed",
   },
   imageLink: { display: "block" },
   imageBox: {
@@ -236,6 +256,7 @@ export default function ProductCard({ product: rawProduct }) {
   const [hovered, setHovered] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [descOverflows, setDescOverflows] = useState(false);
+  const [copied, setCopied] = useState(false);
   const descRef = useRef(null);
 
   const product = withFallbackCopy(rawProduct);
@@ -273,6 +294,30 @@ export default function ProductCard({ product: rawProduct }) {
   const platformName =
     rawPlatformName.charAt(0).toUpperCase() + rawPlatformName.slice(1).toLowerCase();
 
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!taggedLink) return;
+
+    const shareData = {
+      title: name || "Check this out",
+      text: name ? `Check out ${name}` : "Check this out",
+      url: taggedLink,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(taggedLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") console.error("Share failed:", err);
+    }
+  };
+
   return (
     <article
     
@@ -286,6 +331,20 @@ export default function ProductCard({ product: rawProduct }) {
       onMouseLeave={() => setHovered(false)}
     >
       <span style={styles.adBadge}>#Ad</span>
+
+      <button
+        type="button"
+        style={{
+          ...styles.shareBtn,
+          ...(!taggedLink ? styles.shareBtnDisabled : null),
+        }}
+        onClick={handleShare}
+        aria-label={`Share ${name || "product"}`}
+        title={copied ? "Link copied!" : "Share"}
+        disabled={!taggedLink}
+      >
+        {copied ? <Check size={14} /> : <Share2 size={14} />}
+      </button>
 
       {taggedLink ? (
         <a {...linkProps} style={styles.imageLink}>
