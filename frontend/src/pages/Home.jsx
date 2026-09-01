@@ -11,6 +11,7 @@ import { useTheme } from '../context/Themecontext'
 import { getCategoriesForStore } from '../config/stores'
 import EarnKaroInlineAd from '../components/ads/EarnKaroInlineAd'
 import EarnKaroSidebar from '../components/ads/EarnKaroSidebar'
+import { useParams, useNavigate } from 'react-router-dom'
 
 /* ── Skeleton card ─────────────────────────────────── */
 function SkeletonCard() {
@@ -55,7 +56,7 @@ function StatsBar() {
     <div className="home-stats-bar">
       {[
         { icon:'🛍️', label:'Curated Products', value:'500+' },
-        { icon:'🏪', label:'Trusted Stores',   value:'4'    },
+        { icon:'🏪', label:'Trusted Stores',   value:'6'    },
         { icon:'⭐', label:'Top Rated Picks',  value:'100+' },
         { icon:'🔄', label:'Updated',          value:'Daily'},
       ].map(s => (
@@ -74,11 +75,17 @@ const DEFAULT = {
   category:'All', audience:'all', region:'all', minRating:0, featured:false,
 }
 
+/* ── Valid store slugs (must match STORE_KEYS in Navbar.jsx
+   and the `store` enum in the backend Product model) ───── */
+const VALID_STORES = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry']
+
 /* ══════════════════════════════════════════════════════
    HOME PAGE
 ══════════════════════════════════════════════════════ */
 export default function Home() {
   const { isDark, toggle: toggleTheme } = useTheme()
+  const { store: storeParam } = useParams()
+  const navigate = useNavigate()
 
   const [products,      setProducts]      = useState([])
   const [featured,      setFeatured]      = useState([])
@@ -87,12 +94,11 @@ export default function Home() {
   const [filters,       setFilters]       = useState(DEFAULT)
   const [search,        setSearch]        = useState('')
   const [debounced,     setDebounced]     = useState('')
-  const [activeStore,   setActiveStore]   = useState(() => {
-    try {
-      const s = localStorage.getItem('bdp_store')
-      return ['all','amazon','myntra','flipkart','ajio'].includes(s) ? s : 'all'
-    } catch { return 'all' }
-  })
+
+  // Store is derived from the URL (/amazon, /meesho, etc.) rather than
+  // local component state, so /amazon works on direct load/refresh/share.
+  const activeStore = VALID_STORES.includes(storeParam) ? storeParam : 'all'
+
   const [activeFilter,   setActiveFilter]   = useState(null)
   const [activeAudience, setActiveAudience] = useState('all')
   const [sortBy,         setSortBy]         = useState('random')
@@ -100,6 +106,19 @@ export default function Home() {
   const [showSidebar,    setShowSidebar]    = useState(
     () => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
   )
+
+  /* Unknown store slug in the URL → bounce back to "/" */
+  useEffect(() => {
+    if (storeParam && !VALID_STORES.includes(storeParam)) {
+      navigate('/', { replace: true })
+    }
+  }, [storeParam, navigate])
+
+  /* Keep localStorage in sync as a "last visited store" hint only —
+     the URL is the source of truth for activeStore. */
+  useEffect(() => {
+    try { localStorage.setItem('bdp_store', activeStore) } catch {}
+  }, [activeStore])
 
   /* Debounce search */
   useEffect(() => {
@@ -141,9 +160,9 @@ export default function Home() {
     setFilters(DEFAULT); setSearch(''); setActiveFilter(null); setActiveAudience('all')
   }
   const handleStoreChange = s => {
-    setActiveStore(s); setFilters(DEFAULT); setSearch('')
+    setFilters(DEFAULT); setSearch('')
     setActiveFilter(null); setActiveAudience('all')
-    try { localStorage.setItem('bdp_store', s) } catch {}
+    navigate(s === 'all' ? '/' : `/${s}`)
   }
   const handleFilterChange   = tag => setActiveFilter(tag === activeFilter ? null : tag)
   const handleAudienceChange = aud => { setActiveAudience(aud); setFilters(f => ({...f, audience:aud})) }

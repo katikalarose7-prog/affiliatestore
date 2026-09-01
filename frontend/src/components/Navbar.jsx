@@ -10,8 +10,10 @@ const STORES = {
   myntra:   { key:'myntra',   name:'Myntra',   short:'Myntra',   icon:'👗' },
   flipkart: { key:'flipkart', name:'Flipkart', short:'Flipkart', icon:'🛒' },
   ajio:     { key:'ajio',     name:'AJIO',     short:'AJIO',     icon:'✨' },
+  meesho:   { key:'meesho',   name:'Meesho',   short:'Meesho',   icon:'🛍️' },
+  firstcry: { key:'firstcry', name:'FirstCry', short:'FirstCry', icon:'🧸' },
 }
-const STORE_KEYS = ['all','amazon','myntra','flipkart','ajio']
+const STORE_KEYS = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry']
 
 /* ── Primary quick-filters (Row 2) ───────────────────── */
 export const PRIMARY_FILTERS = [

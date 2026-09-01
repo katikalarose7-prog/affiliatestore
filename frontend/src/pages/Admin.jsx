@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { getCategoriesForStore } from '../config/stores'
 
-const STORES    = ['all','amazon','myntra','flipkart','ajio']
+const STORES    = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry']
 const AUDIENCES = ['all','men','women','kids','unisex']
 const REGIONS   = ['all','india','global']
 

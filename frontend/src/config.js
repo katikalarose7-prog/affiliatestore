@@ -25,8 +25,9 @@ export const STORES = {
   myntra:   { key: 'myntra',   name: 'Myntra',     icon: '👗' },
   flipkart: { key: 'flipkart', name: 'Flipkart',   icon: '🛒' },
   ajio:     { key: 'ajio',     name: 'AJIO',       icon: '✨' },
+  meesho:   { key: 'meesho',   name: 'Meesho',     icon: '🛍️' },
+  firstcry: { key: 'firstcry', name: 'FirstCry',   icon: '🧸' },
 }
-
 // ── Pagination ─────────────────────────────────────────────────────
 export const DEFAULT_PAGE_SIZE = 40
 export const MAX_PAGE_SIZE     = 200

@@ -15,6 +15,11 @@ const STORE_CATEGORIES = {
              'Men T-Shirts','Men Shirts','Men Jeans','Men Ethnic Wear',
              'Men Footwear','Men Watches','Men Accessories',
              'Kids Clothing','Kids Footwear','Kids Accessories'],
+  meesho: ['Women Ethnic Wear','Women Western Wear','Sarees','Kurtis','Jewellery',
+         'Men Clothing','Kids Clothing','Home & Kitchen','Beauty & Personal Care',
+         'Bags & Footwear','Electronics Accessories'],
+firstcry: ['Baby Clothing','Baby Care','Diapers & Wipes','Feeding & Nursing',
+           'Toys','Kids Clothing','Kids Footwear','Maternity Wear','Nursery & Furniture'],
 }
 
 const ALL_CATEGORIES = [...new Set([
@@ -46,9 +51,11 @@ const productSchema = new mongoose.Schema({
   featured:      { type: Boolean, default: false },
 
   store: {
-    type: String, enum: ['all','amazon','myntra','flipkart','ajio'],
-    default: 'all', index: true,
-  },
+  type: String,
+  enum: ['all','amazon','myntra','flipkart','ajio','meesho','firstcry'],
+  default: 'all', index: true,
+},
+
   audience: {
     type: String, enum: ['all','men','women','kids','unisex'],
     default: 'all', index: true,

@@ -30,10 +30,10 @@ export default function App() {
         <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
         <Route path="/about"                element={<About />} />
         <Route path="/contact"              element={<Contact />} />
+        <Route path="/:store"               element={<Home />} />
         <Route path="*"                     element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* ✅ Outside Routes — renders on every page */}
       <EarnKaroPopup />
       <PWAInstallBanner />
     </>

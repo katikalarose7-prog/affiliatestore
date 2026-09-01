@@ -9,15 +9,19 @@ export default function Footer() {
     { name:'Myntra',   href:'https://myntr.it/xKiyFgt',   icon:'👗' },
     { name:'Flipkart', href:'https://fktr.in/id2dasV',    icon:'🛒' },
     { name:'AJIO',     href:'https://ajiio.in/JFcuxqI',   icon:'✨' },
+    { name:'Meesho',   href:'https://bitli.in/xiEojtA',   icon:'🛍️' },
+    { name:'FirstCry', href:'https://bitli.in/h32xXWz',   icon:'🧸' },
   ]
 
   const quickLinks = [
     { label:'All Products',    href:'/' },
     { label:'Featured Deals',  href:'/?featured=true' },
-    { label:'Amazon Deals',    href:'/?store=amazon' },
-    { label:'Myntra Picks',    href:'/?store=myntra' },
-    { label:'Flipkart Deals',  href:'/?store=flipkart' },
-    { label:'AJIO Fashion',    href:'/?store=ajio' },
+    { label:'Amazon Deals',    href:'/amazon' },
+    { label:'Myntra Picks',    href:'/myntra' },
+    { label:'Flipkart Deals',  href:'/flipkart' },
+    { label:'AJIO Fashion',    href:'/ajio' },
+    { label:'Meesho Finds',    href:'/meesho' },
+    { label:'FirstCry Baby & Kids', href:'/firstcry' },
   ]
 
   const legalLinks = [
@@ -45,7 +49,7 @@ export default function Footer() {
           </div>
           {/* FIX: Generic tagline — no "Prime" branding */}
           <p className="footer-tagline">
-            Your go-to destination for handpicked affiliate deals from Amazon, Myntra, Flipkart & AJIO.
+            Your go-to destination for handpicked affiliate deals from Amazon, Myntra, Flipkart, AJIO, Meesho & FirstCry.
           </p>
           {/* COMPLIANCE: Proper affiliate disclosure required by Amazon Associates & FTC */}
           <p className="footer-disclaimer">
