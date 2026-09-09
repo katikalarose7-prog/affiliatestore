@@ -55,21 +55,18 @@
       "short_name": "Electronics",
       "description": "Shop top electronics deals",
       "url": "/?category=Electronics",
-      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Featured Deals",
       "short_name": "Featured",
       "description": "View featured products",
       "url": "/?featured=true",
-      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Beauty & Fashion",
       "short_name": "Beauty",
       "description": "Shop beauty and fashion",
       "url": "/?category=Beauty",
-      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     }
   ],
   "related_applications": [],
