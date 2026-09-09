@@ -49,24 +49,24 @@
       "purpose": "maskable"
     }
   ],
-  "shortcuts": [
+   "shortcuts": [
     {
       "name": "Browse Electronics",
       "short_name": "Electronics",
       "description": "Shop top electronics deals",
-      "url": "/?category=Electronics",
+      "url": "/?category=Electronics"
     },
     {
       "name": "Featured Deals",
       "short_name": "Featured",
       "description": "View featured products",
-      "url": "/?featured=true",
+      "url": "/?featured=true"
     },
     {
       "name": "Beauty & Fashion",
       "short_name": "Beauty",
       "description": "Shop beauty and fashion",
-      "url": "/?category=Beauty",
+      "url": "/?category=Beauty"
     }
   ],
   "related_applications": [],
