@@ -5,117 +5,400 @@ const fs         = require('fs');
 const path       = require('path');
 const cloudinary = require('./config/cloudinary');
 const Product    = require('./models/Product');
+const flipkartProducts = require('./flipkart-products.js');
 
 // ── Product list ──────────────────────────────────────
 // description: 2-4 meaningful sentences (Amazon requires real content)
 // highlights:  3-5 bullet points — key reasons to buy
+//
+// NOTE ON `image`:
+//   - A plain filename (e.g. 'castoroil.png') is looked up in ./uploads
+//     and uploaded to Cloudinary, as before.
+//   - A full URL (starts with http:// or https://) is treated as an
+//     already-hosted remote image and used AS-IS — no Cloudinary
+//     upload happens for these.
+//
+// NOTE ON SHAPE — this file now accepts items in EITHER shape:
+//   old/raw scrape shape:    { title, image, affiliate, category, ... }
+//   schema-ready shape:      { name, image, affiliateLink, category, ... }
+// (the schema-ready shape is what earnkaro-to-schema.js's browser
+// script now outputs directly). normalizeItem() below reads whichever
+// fields are present so you can paste either shape in without editing
+// the import logic each time.
+const meeshoProducts = [
+  {
+    "name": "Women Rayon Jivika Voguish Women Kurta Sets",
+    "description": "Women Rayon Jivika Voguish Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Soft and comfortable rayon fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/32962343/ir564_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/AzhNkBJ",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Kurta Sets",
+    "description": "Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/502998324/uzckm_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/OjbvZgI",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Trendy Petite Women Kurta Sets",
+    "description": "Trendy Petite Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/156518071/0amdq_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/nm4vDjD",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Women Rayon Adrika Graceful Women Kurta Sets",
+    "description": "Women Rayon Adrika Graceful Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Soft and comfortable rayon fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/18604747/01493_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/Dl9EQxf",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Chitrarekha Petite Women Kurta Sets",
+    "description": "Chitrarekha Petite Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/299067800/lodp2_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/2iFcdtX",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Women Cotton Kashvi Fashionable Women Kurta Sets",
+    "description": "Women Cotton Kashvi Fashionable Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Comfortable cotton fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/330040829/rjvp4_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/A0INotZ",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Women Rayon Charvi Sensational Women Kurta Sets",
+    "description": "Women Rayon Charvi Sensational Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Soft and comfortable rayon fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/538751297/rpz64_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/23gbnnu",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Jivika Pretty Women Kurta Sets",
+    "description": "Jivika Pretty Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/424059908/03omz_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/R2CiMwW",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Women Viscose Rayon Jivika Attractive Women Kurta Sets",
+    "description": "Women Viscose Rayon Jivika Attractive Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Soft and comfortable rayon fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/538224697/n3tvj_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/Vwjr7R1",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Aagyeyi Sensational Women Kurta Sets",
+    "description": "Aagyeyi Sensational Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/387883442/bb28w_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/EB6XGUV",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Women Cotton Aishani Fashionable Women Kurta Sets",
+    "description": "Women Cotton Aishani Fashionable Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Comfortable cotton fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/376902392/vz8cg_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/0UbqNW9",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Women Rayon Trendy Fabulous Women Kurta Sets",
+    "description": "Women Rayon Trendy Fabulous Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Soft and comfortable rayon fabric",
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/18833757/f1e08_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/VwnXIC0",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Alisha Superior Women Kurta Sets",
+    "description": "Alisha Superior Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/319207700/kxgy8_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/53emi1r",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Alisha Ensemble Women Kurta Sets",
+    "description": "Alisha Ensemble Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/180708156/fi16z_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/QPXT57Q",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Aishani Attractive Women Kurta Sets",
+    "description": "Aishani Attractive Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/280122185/cgz9o_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/2gi5JI4",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Charvi Ensemble Women Kurta Sets",
+    "description": "Charvi Ensemble Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/335948914/vr6p8_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/Xa1z2PV",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Abhisarika Sensational Women Kurta Sets",
+    "description": "Abhisarika Sensational Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/381228447/qkned_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/U2IErwD",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Abhisarika Pretty Women Kurta Sets",
+    "description": "Abhisarika Pretty Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/382035801/ie1a4_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/WA38WBx",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Chitrarekha Sensational Women Kurta Sets",
+    "description": "Chitrarekha Sensational Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/544666764/vtnsp_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/Mq3KKvj",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  },
+  {
+    "name": "Alisha Pretty Women Kurta Sets",
+    "description": "Alisha Pretty Women Kurta Sets. A stylish fashion choice available on Meesho. Check the latest price, available sizes, colours and offers before purchasing.",
+    "highlights": [
+      "Stylish ethnic wear",
+      "Available through Meesho"
+    ],
+    "image": "https://images.meesho.com/images/products/547159254/u2xz6_512.webp",
+    "category": "Fashion",
+    "affiliateLink": "https://bitli.in/ua3ME2Q",
+    "rating": 0,
+    "reviews": 0,
+    "featured": false,
+    "store": "meesho",
+    "audience": "women",
+    "region": "india",
+    "tags": []
+  }
+];
+
+// Combined product list: existing Meesho items + newly added Flipkart items
 const products = [
-  {
-    title:     'Castor Oil - Cold Pressed',
-    image:     'castoroil.png',
-    affiliate: 'https://amzn.to/4exI8ci',
-    category:  'Beauty',
-    region:    'india',
-    audience:  'all',
-    rating:    4.2,
-    tags:      ['bestseller'],
-    description: 'A pure cold-pressed castor oil that promotes healthy hair growth and nourishes the scalp. Rich in ricinoleic acid, it deeply conditions hair, reduces breakage, and adds thickness over time. Also effective as a moisturiser for dry skin and cracked heels.',
-    highlights: [
-      'Cold-pressed to retain all natural nutrients and fatty acids',
-      'Stimulates hair follicles for thicker, longer hair growth',
-      'Free from mineral oils, parabens, and artificial additives',
-      'Multi-use: hair, scalp, skin, eyebrows, and eyelashes',
-    ],
-  },
-  {
-    title:     'Ear Rings - Pack of 24 Gold Plated',
-    image:     'earrings.png',
-    affiliate: 'https://amzn.to/4exI8ci',
-    category:  'Jewellery',
-    region:    'india',
-    audience:  'women',
-    rating:    4.0,
-    tags:      ['trending'],
-    description: 'A value pack of 24 beautifully designed gold-plated ear rings suited for everyday wear and festive occasions. Each pair features a secure locking mechanism so you never worry about losing one. The lightweight design ensures comfort even during long hours of wear.',
-    highlights: [
-      'Pack of 24 pairs — great variety for every outfit',
-      'Gold-plated finish with tarnish-resistant coating',
-      'Hypoallergenic posts — safe for sensitive ears',
-      'Lightweight design comfortable for all-day wear',
-    ],
-  },
-  {
-    title:     'ALPS Goodness RoseMary Water for Hair Growth',
-    image:     'rosemarywater.png',
-    affiliate: 'https://amzn.to/4vHHqiv',
-    category:  'Beauty',
-    region:    'india',
-    audience:  'all',
-    rating:    4.3,
-    tags:      ['toprated'],
-    description: 'ALPS Goodness Rosemary Water is a natural hair tonic that strengthens roots, reduces hair fall, and promotes new growth. Rosemary has clinically proven hair-growth benefits comparable to minoxidil, without the side effects. Simply spray on the scalp and massage for best results.',
-    highlights: [
-      'Contains pure rosemary extract — clinically proven for hair growth',
-      'Reduces hair fall and strengthens roots from within',
-      'No sulphates, silicones, or parabens',
-      'Easy spray bottle — no mess, no rinse needed',
-      'Suitable for all hair types including colour-treated hair',
-    ],
-  },
-  {
-    title:     'Premium Black Car Seat Back Organiser with Foldable Tray',
-    image:     'carorganiser.png',
-    affiliate: 'https://amzn.to/3QcSrt2',
-    category:  'Automotive',
-    region:    'india',
-    audience:  'all',
-    rating:    4.1,
-    tags:      ['bestseller'],
-    description: 'Keep your car interior neat and organised with this multi-pocket seat-back organiser. Features a foldable dining tray, tablet holder, and multiple pockets for water bottles, snacks, and essentials. Ideal for long road trips and keeping rear-seat passengers comfortable.',
-    highlights: [
-      'Foldable tray table — perfect for work and eating on the go',
-      'Built-in tablet/iPad holder with adjustable strap',
-      'Multiple pockets for bottles, snacks, phones, and books',
-      'Universal fit — attaches securely to any car headrest',
-      'Premium Oxford fabric — easy to clean and long-lasting',
-    ],
-  },
-  {
-    title:     'FITVERT Car Door Edge & Body Protector Pads — 12 Piece Silicone',
-    image:     'fitvert.png',
-    affiliate: 'https://amzn.to/4vHpxAi',
-    category:  'Automotive',
-    region:    'india',
-    audience:  'all',
-    rating:    4.0,
-    tags:      ['under499'],
-    description: 'Protect your car doors and body panels from dents and scratches with these self-adhesive silicone guard pads. Designed to absorb impact when doors open in tight parking spots. The transparent design keeps your car looking clean while providing solid protection.',
-    highlights: [
-      'Pack of 12 — covers all four doors front and back',
-      'High-grade silicone absorbs impact and prevents dents',
-      '3M self-adhesive backing — no tools, installs in minutes',
-      'Transparent design — virtually invisible on your car',
-      'Weather-resistant — works in extreme heat and cold',
-    ],
-  },
-  {
-    title:     'Humble Car Dashboard Phone Holder — 360° Adjustable',
-    image:     'humblecar.png',
-    affiliate: 'https://amzn.to/4ecwlyD',
-    category:  'Automotive',
-    region:    'india',
-    audience:  'all',
-    rating:    4.2,
-    tags:      ['under499'],
-    description: 'A sturdy 360-degree adjustable phone mount that keeps your device at eye level for safe navigation while driving. The strong suction base stays firmly in place even on bumpy roads. Compatible with all smartphones up to 7 inches wide.',
-    highlights: [
-      '360° rotation — view your phone in portrait or landscape',
-      'Industrial-strength suction cup — stays firm on any surface',
-      'One-handed operation with squeeze-release arm',
-      'Fits all smartphones from 4" to 7" wide',
-      'Reduces neck strain vs. holding your phone while driving',
-    ],
-  },
+  ...meeshoProducts,
+  ...flipkartProducts
 ];
 
 // ── Cloudinary upload ─────────────────────────────────
@@ -132,39 +415,127 @@ async function uploadToCloudinary(filePath) {
   return { url: result.secure_url, public_id: result.public_id };
 }
 
+function cleanUrl(value) {
+  if (typeof value !== 'string') return '';
+
+  value = value.trim();
+
+  // Convert Markdown link:
+  // [https://example.com](https://example.com)
+  // into:
+  // https://example.com
+  const markdownMatch = value.match(/^\[.*?\]\((https?:\/\/[^)]+)\)$/i);
+
+  if (markdownMatch) {
+    return markdownMatch[1];
+  }
+
+  return value;
+}
+
+function isRemoteUrl(image) {
+  return typeof image === 'string' && /^https?:\/\//i.test(image.trim());
+}
+
+function normalizeItem(item) {
+  return {
+    title: item.title || item.name,
+
+    affiliate: cleanUrl(
+      item.affiliate || item.affiliateLink
+    ),
+
+    image: cleanUrl(item.image),
+
+    description: item.description,
+    highlights: item.highlights,
+    category: item.category,
+    rating: item.rating,
+    featured: item.featured,
+    region: item.region,
+    audience: item.audience,
+    tags: item.tags,
+    store: item.store,
+  };
+}
 // ── Main ──────────────────────────────────────────────
 async function run() {
   await mongoose.connect(process.env.MONGO_URI);
   console.log('✅  MongoDB connected\n');
 
-  const summary = { imported:0, skipped:0, missingImages:0, failed:0, errors:[] };
+  const summary = { imported:0, skipped:0, missingImages:0, failed:0, invalid:0, errors:[] };
 
-  for (const item of products) {
+  for (const raw of products) {
+    const item = normalizeItem(raw);
+
+    if (!item.title || !item.affiliate) {
+      console.warn(`⚠️  Skipping malformed entry (missing title/name or affiliate link): ${JSON.stringify(raw).slice(0, 80)}...`);
+      summary.invalid++;
+      continue;
+    }
+
     const label = item.title.slice(0, 50);
 
     // 1. Skip duplicates
-    const existing = await Product.findOne({ affiliateLink: item.affiliate });
-    if (existing) { console.log(`⏭️  Duplicate — skipping: ${label}…`); summary.skipped++; continue; }
+    const existing = await Product.findOne({
+  affiliateLink: item.affiliate
+});
 
-    // 2. Resolve image
-    const imagePath   = item.image ? path.join(UPLOADS_DIR, item.image) : null;
-    const imageExists = imagePath && fs.existsSync(imagePath);
-    if (item.image && !imageExists) { console.warn(`⚠️  Image not found: ${item.image}`); summary.missingImages++; }
+if (existing) {
+  try {
+    await Product.updateOne(
+      { _id: existing._id },
+      {
+        $set: {
+          name: item.title,
+          description: item.description || item.title,
+          highlights: item.highlights || [],
+          category: item.category || 'Fashion',
+          rating: parseFloat(item.rating) || 0,
+          featured: item.featured || false,
+          region: item.region || 'all',
+          audience: item.audience || 'all',
+          tags: item.tags || [],
+          store: item.store || 'meesho'
+        }
+      }
+    );
 
-    // 3. Cloudinary upload
+    console.log(`🔄 Updated: ${label}…`);
+    continue;
+
+  } catch (e) {
+    console.error(`❌ Update failed for "${label}": ${e.message}`);
+    continue;
+  }
+}
+
+    // 2. Resolve image — remote URL vs local file
     let imageUrl = '', cloudinaryPublicId = '';
-    if (imageExists) {
-      try {
-        const up = await uploadToCloudinary(imagePath);
-        imageUrl = up.url; cloudinaryPublicId = up.public_id;
-        console.log(`☁️  Uploaded: ${item.image}`);
-      } catch (e) {
-        console.error(`❌  Cloudinary failed for ${item.image}: ${e.message}`);
-        summary.errors.push(`${label}: ${e.message}`);
+
+    if (isRemoteUrl(item.image)) {
+      // Already-hosted image (e.g. FirstCry CDN) — use directly, no
+      // Cloudinary upload.
+      imageUrl = item.image;
+      console.log(`🔗  Using remote image: ${item.image}`);
+    } else {
+      const imagePath   = item.image ? path.join(UPLOADS_DIR, item.image) : null;
+      const imageExists = imagePath && fs.existsSync(imagePath);
+      if (item.image && !imageExists) { console.warn(`⚠️  Image not found: ${item.image}`); summary.missingImages++; }
+
+      if (imageExists) {
+        try {
+          const up = await uploadToCloudinary(imagePath);
+          imageUrl = up.url; cloudinaryPublicId = up.public_id;
+          console.log(`☁️  Uploaded: ${item.image}`);
+        } catch (e) {
+          console.error(`❌  Cloudinary failed for ${item.image}: ${e.message}`);
+          summary.errors.push(`${label}: ${e.message}`);
+        }
       }
     }
 
-    // 4. Save to MongoDB
+    // 3. Save to MongoDB
     try {
       await Product.create({
         name:               item.title,
@@ -197,6 +568,7 @@ async function run() {
   console.log(`  ⏭️   Skipped (dup)  : ${summary.skipped}`);
   console.log(`  ⚠️   Missing images : ${summary.missingImages}`);
   console.log(`  ❌  Failed         : ${summary.failed}`);
+  console.log(`  ⚠️   Invalid entries: ${summary.invalid}`);
   if (summary.errors.length) { console.log('\n  Errors:'); summary.errors.forEach(e => console.log(`  • ${e}`)); }
   console.log('════════════════════════════════════════\n');
   process.exit(0);

@@ -49,10 +49,9 @@ const productSchema = new mongoose.Schema({
   rating:        { type: Number, min: 0, max: 5, default: 0 },
   reviews:       { type: Number, default: 0 },
   featured:      { type: Boolean, default: false },
-
   store: {
   type: String,
-  enum: ['all','amazon','myntra','flipkart','ajio','meesho','firstcry'],
+  enum: ['all','amazon','myntra','flipkart','ajio','meesho','firstcry','nykaa'],
   default: 'all', index: true,
 },
 

@@ -27,6 +27,8 @@ export const STORES = {
   ajio:     { key: 'ajio',     name: 'AJIO',       icon: '✨' },
   meesho:   { key: 'meesho',   name: 'Meesho',     icon: '🛍️' },
   firstcry: { key: 'firstcry', name: 'FirstCry',   icon: '🧸' },
+    nykaa:   { key: 'nykaa',   name: 'Nykaa',     icon: '🛍️' },
+
 }
 // ── Pagination ─────────────────────────────────────────────────────
 export const DEFAULT_PAGE_SIZE = 40

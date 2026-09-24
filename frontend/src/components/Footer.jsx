@@ -11,6 +11,8 @@ export default function Footer() {
     { name:'AJIO',     href:'https://ajiio.in/JFcuxqI',   icon:'✨' },
     { name:'Meesho',   href:'https://bitli.in/xiEojtA',   icon:'🛍️' },
     { name:'FirstCry', href:'https://bitli.in/h32xXWz',   icon:'🧸' },
+        { name:'Nykaa',   href:'https://bitli.in/19MIThG',   icon:'🛍️' },
+
   ]
 
   const quickLinks = [
@@ -22,6 +24,8 @@ export default function Footer() {
     { label:'AJIO Fashion',    href:'/ajio' },
     { label:'Meesho Finds',    href:'/meesho' },
     { label:'FirstCry Baby & Kids', href:'/firstcry' },
+        { label:'Nykaa Picks',    href:'/nykaa' },
+
   ]
 
   const legalLinks = [
@@ -49,7 +53,7 @@ export default function Footer() {
           </div>
           {/* FIX: Generic tagline — no "Prime" branding */}
           <p className="footer-tagline">
-            Your go-to destination for handpicked affiliate deals from Amazon, Myntra, Flipkart, AJIO, Meesho & FirstCry.
+            Your go-to destination for handpicked affiliate deals from Amazon, Myntra, Flipkart, AJIO, Meesho , Nykaa & FirstCry.
           </p>
           {/* COMPLIANCE: Proper affiliate disclosure required by Amazon Associates & FTC */}
           <p className="footer-disclaimer">

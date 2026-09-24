@@ -77,7 +77,7 @@ const DEFAULT = {
 
 /* ── Valid store slugs (must match STORE_KEYS in Navbar.jsx
    and the `store` enum in the backend Product model) ───── */
-const VALID_STORES = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry']
+const VALID_STORES = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry','nykaa']
 
 /* ══════════════════════════════════════════════════════
    HOME PAGE

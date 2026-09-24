@@ -12,8 +12,10 @@ const STORES = {
   ajio:     { key:'ajio',     name:'AJIO',     short:'AJIO',     icon:'✨' },
   meesho:   { key:'meesho',   name:'Meesho',   short:'Meesho',   icon:'🛍️' },
   firstcry: { key:'firstcry', name:'FirstCry', short:'FirstCry', icon:'🧸' },
+    nykaa:   { key:'nykaa',   name:'Nykaa',   short:'Nykaa',   icon:'🛍️' },
+
 }
-const STORE_KEYS = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry']
+const STORE_KEYS = ['all','amazon','myntra','flipkart','ajio','meesho','firstcry','nykaa']
 
 /* ── Primary quick-filters (Row 2) ───────────────────── */
 export const PRIMARY_FILTERS = [
