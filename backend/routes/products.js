@@ -217,7 +217,8 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     res.status(400).json({ message: err.message })
   }
 })
-
+console.log('PRODUCT STORE RECEIVED:', req.body.store);
+console.log('VALID STORES:', Product.schema.path('store').enumValues);
 // ── PUT /api/products/:id ─────────────────────────────────────────
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
   try {
