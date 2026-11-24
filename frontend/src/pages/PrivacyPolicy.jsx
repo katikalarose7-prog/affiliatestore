@@ -22,11 +22,11 @@ export default function PrivacyPolicy() {
             },
             {
               title:'2. Affiliate Links',
-              body:`DealZone participates in affiliate programs with Amazon, Myntra, Flipkart, and AJIO. When you click a product link and make a purchase, we may earn a small commission at no additional cost to you. This helps us keep the site running and free for users.`
+              body:`DealZone participates in affiliate programs with Amazon, Myntra, Flipkart,Blinkit and AJIO. When you click a product link and make a purchase, we may earn a small commission at no additional cost to you. This helps us keep the site running and free for users.`
             },
             {
               title:'3. Third-Party Websites',
-              body:`Our site contains links to third-party stores (Amazon, Myntra, Flipkart, AJIO). Once you leave DealZone and visit these sites, their own privacy policies apply. We have no control over their content or practices.`
+              body:`Our site contains links to third-party stores (Amazon, Myntra, Flipkart, Blinkit,AJIO). Once you leave DealZone and visit these sites, their own privacy policies apply. We have no control over their content or practices.`
             },
             {
               title:'4. Cookies',
@@ -60,7 +60,7 @@ export default function PrivacyPolicy() {
           ))}
 
           <div style={{marginTop:'32px',padding:'16px',background:'var(--accent-bg)',border:'1px solid var(--accent-bdr)',borderRadius:'var(--r-lg)',fontSize:'13px',color:'var(--text2)'}}>
-            * As an Amazon Associate and affiliate partner of Myntra, Flipkart, and AJIO, DealZone earns from qualifying purchases.
+            * As an Amazon Associate and affiliate partner of Myntra, Flipkart,Blinkit and AJIO, DealZone earns from qualifying purchases.
           </div>
         </div>
       </div>

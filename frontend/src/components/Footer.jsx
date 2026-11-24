@@ -7,7 +7,9 @@ export default function Footer() {
   const stores = [
     { name:'Amazon',   href:'https://www.amazon.in?&linkCode=ll2&tag=picksystore03-21&linkId=962f5eec78150f5c995a7b70f87525d2&ref_=as_li_ss_tl',    icon:'📦' },
     { name:'Myntra',   href:'https://myntr.it/xKiyFgt',   icon:'👗' },
-    { name:'Flipkart', href:'https://fktr.in/id2dasV',    icon:'🛒' },
+    { name:'Flipkart', href:'https://fktr.in/id2dasV',    icon:'🛍️' },
+            { name:'Blinkit',   href:'https://bitli.in/H8ZNRvu',   icon:'🛒' },
+
     { name:'AJIO',     href:'https://ajiio.in/JFcuxqI',   icon:'✨' },
     { name:'Meesho',   href:'https://bitli.in/xiEojtA',   icon:'🛍️' },
     { name:'FirstCry', href:'https://bitli.in/h32xXWz',   icon:'🧸' },
@@ -21,6 +23,8 @@ export default function Footer() {
     { label:'Amazon Deals',    href:'/amazon' },
     { label:'Myntra Picks',    href:'/myntra' },
     { label:'Flipkart Deals',  href:'/flipkart' },
+        { label:'Blinkit Deals',  href:'/blinkit' },
+
     { label:'AJIO Fashion',    href:'/ajio' },
     { label:'Meesho Finds',    href:'/meesho' },
     { label:'FirstCry Baby & Kids', href:'/firstcry' },
@@ -53,7 +57,7 @@ export default function Footer() {
           </div>
           {/* FIX: Generic tagline — no "Prime" branding */}
           <p className="footer-tagline">
-            Your go-to destination for handpicked affiliate deals from Amazon, Myntra, Flipkart, AJIO, Meesho , Nykaa & FirstCry.
+            Your go-to destination for handpicked affiliate deals from Amazon, Myntra, Flipkart, Blinkit, AJIO, Meesho , Nykaa & FirstCry.
           </p>
           {/* COMPLIANCE: Proper affiliate disclosure required by Amazon Associates & FTC */}
           <p className="footer-disclaimer">

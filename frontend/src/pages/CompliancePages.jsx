@@ -43,7 +43,7 @@ export function PrivacyPolicy() {
     },
     {
       title: '2. Affiliate Links & Commissions',
-      body:  'BestDealProducts participates in affiliate programs with Amazon, Myntra, Flipkart, and AJIO. When you click a product link and make a purchase, we may earn a small commission at no additional cost to you. This helps keep the site running and free for all users.',
+      body:  'BestDealProducts participates in affiliate programs with Amazon, Myntra, Flipkart,Blinkit and AJIO. When you click a product link and make a purchase, we may earn a small commission at no additional cost to you. This helps keep the site running and free for all users.',
     },
     {
       title: '3. Cookies & Analytics',
@@ -51,7 +51,7 @@ export function PrivacyPolicy() {
     },
     {
       title: '4. Third-Party Websites',
-      body:  'Our site contains links to third-party stores (Amazon, Myntra, Flipkart, AJIO). Once you leave BestDealProducts, their own privacy policies apply. We have no control over their content, policies, or practices.',
+      body:  'Our site contains links to third-party stores (Amazon, Myntra, Flipkart,Blinkit, AJIO). Once you leave BestDealProducts, their own privacy policies apply. We have no control over their content, policies, or practices.',
     },
     {
       title: '5. Data Security',
@@ -95,7 +95,7 @@ export function Terms() {
     },
     {
       title: '2. Purpose of the Site',
-      body:  'BestDealProducts is an affiliate product discovery platform. We curate and display product deals from Amazon, Myntra, Flipkart, and AJIO. We do not sell products directly. All purchases are completed on the respective retailer\'s website. We are not responsible for transactions between you and third-party retailers.',
+      body:  'BestDealProducts is an affiliate product discovery platform. We curate and display product deals from Amazon, Myntra, Flipkart,Blinkit and AJIO. We do not sell products directly. All purchases are completed on the respective retailer\'s website. We are not responsible for transactions between you and third-party retailers.',
     },
     {
       title: '3. Affiliate Disclosure',
@@ -160,7 +160,7 @@ export function AffiliateDisclosure() {
           <strong>Amazon Associates Program</strong>, an affiliate advertising program
           designed to provide a means for sites to earn advertising fees by advertising
           and linking to Amazon.in and Amazon.com. We also participate in affiliate
-          programs with Myntra, Flipkart, and AJIO.
+          programs with Myntra, Flipkart,Blinkit and AJIO.
         </p>
       </div>
 
@@ -221,7 +221,7 @@ export function About() {
         <p style={sBody}>
           BestDealProducts is a curated affiliate product discovery platform. We
           handpick deals across Beauty, Electronics, Fashion, Kitchen, Fitness, and
-          more from trusted Indian retailers like Amazon, Myntra, Flipkart, and AJIO.
+          more from trusted Indian retailers like Amazon, Myntra, Flipkart, Blinkit and AJIO.
           Our goal is to help you find quality products at great prices without spending
           hours browsing multiple stores.
         </p>

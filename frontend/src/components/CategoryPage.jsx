@@ -46,7 +46,7 @@ const BUYING_GUIDES = {
   },
   // Add more categories as needed
   Default: {
-    intro: `DealZone curates the best Amazon.in deals across categories, 
+    intro: `BestDealProducts curates the best Amazon.in deals across categories, 
     updated daily. Every product is selected based on value for money, 
     customer ratings, and availability for Indian buyers.`,
     tips: [

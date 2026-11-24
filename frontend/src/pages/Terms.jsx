@@ -21,7 +21,7 @@ export default function Terms() {
             },
             {
               title:'2. Purpose of the Site',
-              body:`DealZone is an affiliate product discovery platform. We curate and display product deals from Amazon, Myntra, Flipkart, and AJIO. We do not sell products directly. All purchases are made on the respective store's website.`
+              body:`DealZone is an affiliate product discovery platform. We curate and display product deals from Amazon, Myntra, Flipkart,Blinkit and AJIO. We do not sell products directly. All purchases are made on the respective store's website.`
             },
             {
               title:'3. Affiliate Disclosure',
@@ -33,7 +33,7 @@ export default function Terms() {
             },
             {
               title:'5. Intellectual Property',
-              body:`Product names, images, and trademarks belong to their respective owners (Amazon, Myntra, Flipkart, AJIO, and their vendors). DealZone does not claim ownership of any product content.`
+              body:`Product names, images, and trademarks belong to their respective owners (Amazon, Myntra, Flipkart, Blinkit, AJIO, and their vendors). DealZone does not claim ownership of any product content.`
             },
             {
               title:'6. Limitation of Liability',

@@ -11,7 +11,7 @@ export default {
     // FIX: Renamed site name
     const SITE_NAME  = "BestDealProducts"
     // FIX: Renamed title — removed "Prime" branding
-    const SITE_TITLE = "BestDealProducts — Handpicked Deals from Amazon, Myntra, Flipkart, Nykaa & AJIO"
+    const SITE_TITLE = "BestDealProducts — Handpicked Deals from Amazon, Myntra, Flipkart, Blinkit, Nykaa & AJIO"
 
     // For API requests, pass through
     if (url.pathname.startsWith('/api/')) {

@@ -23,7 +23,9 @@ export const STORES = {
   all:      { key: 'all',      name: 'All Stores', icon: '🏪' },
   amazon:   { key: 'amazon',   name: 'Amazon',     icon: '📦' },
   myntra:   { key: 'myntra',   name: 'Myntra',     icon: '👗' },
-  flipkart: { key: 'flipkart', name: 'Flipkart',   icon: '🛒' },
+  flipkart: { key: 'flipkart', name: 'Flipkart',   icon: '🛍️' },
+    blinkit: { key: 'blinkit', name: 'Blinkit',   icon: '🛒' },
+
   ajio:     { key: 'ajio',     name: 'AJIO',       icon: '✨' },
   meesho:   { key: 'meesho',   name: 'Meesho',     icon: '🛍️' },
   firstcry: { key: 'firstcry', name: 'FirstCry',   icon: '🧸' },

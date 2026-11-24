@@ -20,7 +20,9 @@ import { API } from '../config'
 const STORE_COLORS = {
   amazon:   { bg:'#fff7ed', color:'#c2410c', icon:'📦' },
   myntra:   { bg:'#fff1f2', color:'#be123c', icon:'👗' },
-  flipkart: { bg:'#eff6ff', color:'#1d4ed8', icon:'🛒' },
+  flipkart: { bg:'#eff6ff', color:'#1d4ed8', icon:'🛍️' },
+    blinkit: { bg:'#eff6ff', color:'#facc15', icon:'🛒' },
+
   ajio:     { bg:'#faf5ff', color:'#7e22ce', icon:'✨' },
   meesho:   { bg:'#fdf2f8', color:'#be185d', icon:'🛍️' },
   firstcry: { bg:'#eefaf3', color:'#0f766e', icon:'🧸' },

@@ -33,6 +33,9 @@
   --myntra-bg:   #fff1f2;
   --flipkart:    #2563eb;
   --flipkart-bg: #eff6ff;
+  
+  --blinkit:    #ecf716;
+  --blinkit-bg: #eff6ff;
   --ajio:        #a855f7;
   --ajio-bg:     #faf5ff;
   --r:           8px;
@@ -76,6 +79,8 @@
   --amazon-bg:  rgba(249,115,22,0.1);
   --myntra-bg:  rgba(244,63,94,0.1);
   --flipkart-bg:rgba(37,99,235,0.1);
+    --blinkit-bg:rgba(37,99,235,0.1);
+
   --ajio-bg:    rgba(168,85,247,0.1);
   --shadow-sm:  0 1px 3px rgba(0,0,0,.4);
   --shadow:     0 4px 12px rgba(0,0,0,.5);
@@ -489,6 +494,8 @@ input:focus, select:focus, textarea:focus { outline: none; }
 .badge-amazon   { background:var(--amazon-bg);   color:var(--amazon);   }
 .badge-myntra   { background:var(--myntra-bg);   color:var(--myntra);   }
 .badge-flipkart { background:var(--flipkart-bg); color:var(--flipkart); }
+.badge-blinkit { background:var(--blinkit-bg); color:var(--blinkit); }
+
 .badge-ajio     { background:var(--ajio-bg);     color:var(--ajio);     }
 .badge-all      { background:var(--accent-bg);   color:var(--accent);   }
 

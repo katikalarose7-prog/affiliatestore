@@ -1,28 +1,30 @@
 /**
- * affiliateLink.js (v2 — multi-platform)
+ * affiliateLink.js (v3 — multi-platform + EarnKaro shortener support)
  *
- * You sell across Amazon, Myntra, Flipkart, and AJIO, going through
- * an affiliate network (Cuelinks/EarnKaro/INRDeals/Admitad/vCommission
- * etc.) for the non-Amazon platforms. Those networks work differently
- * from Amazon Associates:
+ * You sell across Amazon, Myntra, Flipkart, AJIO, Meesho, and FirstCry.
+ * Amazon links you build yourself (?tag=...). The rest go through an
+ * affiliate network — in your case EarnKaro, whose links come back as
+ * bitli.in short URLs.
  *
- *   - Amazon: you build the link yourself and append ?tag=YOUR_TAG.
- *   - Networks: you generate/convert the link on their side, and they
- *     hand you back a URL already carrying your tracking (often on
- *     their own domain, e.g. cuelinks.com, ekaro.in, ad.admitad.com —
- *     or the original merchant domain with their own tracking params
- *     baked in).
+ * v2 only knew about Cuelinks/EarnKaro's own domain/vCommission/Admitad
+ * etc. as network hosts, but not bitli.in specifically — so every
+ * FirstCry (and Meesho) link, which is a bitli.in short link, fell
+ * through to the "unrecognized domain" branch. It still rendered the
+ * link (so DB inserts weren't literally blocked), but it warned loudly
+ * on every single product and getPlatformName() returned null for all
+ * of them.
  *
- * v1 of this file only recognized Amazon domains, so it treated every
- * Myntra/Flipkart/AJIO link as invalid and showed "Link unavailable" —
- * even though those were real, already-tracked links. This version
- * recognizes all four platforms plus common network redirect domains,
- * and only blocks a link when it's genuinely broken (not a URL at all,
- * or completely empty) — not just because it isn't Amazon.
+ * v3 adds bitli.in to NETWORK_HOSTS, and firstcry.com / meesho.com to
+ * MERCHANT_HOSTS + PLATFORM_NAMES.
  *
- * IMPORTANT: add your specific network's actual domain(s) below if
- * they're not already listed — I've included the common ones, but
- * confirm against a real generated link from your dashboard.
+ * IMPORTANT CAVEAT: bitli.in is a SHARED shortener domain used for
+ * both Meesho and FirstCry (and potentially others via EarnKaro). You
+ * cannot tell which store a bitli.in link belongs to just by looking
+ * at the URL — getPlatformName() will return "EarnKaro" (generic) for
+ * any bitli.in link rather than "FirstCry" or "Meesho" specifically.
+ * When inserting products, set the `store` field on the product
+ * record directly from your source data (e.g. JSON's `source` field
+ * lowercased) rather than trying to derive it from the affiliate URL.
  */
 
 export const ASSOCIATES_TAG = "picksystore03-21";
@@ -41,6 +43,9 @@ const MERCHANT_HOSTS = [
   "myntra.com",
   "flipkart.com",
   "ajio.com",
+  "firstcry.com",
+  "meesho.com",
+  "blinkit.com"
 ];
 
 // Common affiliate network redirect domains. Trusted as already
@@ -51,6 +56,7 @@ const NETWORK_HOSTS = [
   "linksredirect.com",
   "ekaro.in",
   "earnkaro.com",
+  "bitli.in",       // EarnKaro's URL shortener — used for Meesho & FirstCry
   "inrdeals.com",
   "admitad.com",
   "ad.admitad.com",
@@ -60,6 +66,10 @@ const NETWORK_HOSTS = [
 
 // Display names for each recognized merchant domain, used to build
 // "View on X" CTA text automatically from the link itself.
+// NOTE: bitli.in is intentionally NOT here — it's a shared shortener,
+// so a bitli.in URL alone can't tell you which store it points to.
+// Use getPlatformName(url, fallbackStore) below and pass your own
+// store/source field as the fallback for shortener links.
 const PLATFORM_NAMES = {
   "amazon.in": "Amazon",
   "amazon.com": "Amazon",
@@ -68,26 +78,47 @@ const PLATFORM_NAMES = {
   "myntra.com": "Myntra",
   "flipkart.com": "Flipkart",
   "ajio.com": "Ajio",
+  "firstcry.com": "FirstCry",
+  "meesho.com": "Meesho",
+  "blinkit.com":"Blinkit"
 };
 
+// Shortener/network-only domains that can't tell you the merchant on
+// their own — used to decide when to fall back to a provided store name.
+const SHORTENER_ONLY_HOSTS = ["bitli.in"];
+
 /**
- * Returns a display name ("Amazon", "Myntra", "Flipkart", "Ajio") based
- * on the link's domain, or null if it can't be determined (e.g. the
- * link is wrapped in a network redirect domain rather than the direct
- * merchant domain — in that case, use a `store`/`platform` field from
- * your product data instead, if you have one).
+ * Returns a display name ("Amazon", "Myntra", "Flipkart", "Ajio",
+ * "FirstCry", "Meesho") based on the link's domain.
+ *
+ * If the link is on a shared shortener domain (e.g. bitli.in) where
+ * the merchant can't be determined from the URL alone, pass a
+ * `fallbackStore` (e.g. your product's `store` or JSON `source` field)
+ * and that will be returned instead, title-cased. Returns null only if
+ * nothing can be determined at all.
  */
-export function getPlatformName(rawUrl) {
-  if (!rawUrl) return null;
+export function getPlatformName(rawUrl, fallbackStore = null) {
+  if (!rawUrl) return fallbackStore ? titleCase(fallbackStore) : null;
   try {
     const host = normalizeHost(new URL(rawUrl).hostname);
+
+    if (hostMatches(host, SHORTENER_ONLY_HOSTS)) {
+      return fallbackStore ? titleCase(fallbackStore) : null;
+    }
+
     const match = Object.keys(PLATFORM_NAMES).find(
       (h) => host === h || host.endsWith(`.${h}`)
     );
-    return match ? PLATFORM_NAMES[match] : null;
+    if (match) return PLATFORM_NAMES[match];
+
+    return fallbackStore ? titleCase(fallbackStore) : null;
   } catch {
-    return null;
+    return fallbackStore ? titleCase(fallbackStore) : null;
   }
+}
+
+function titleCase(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
 function normalizeHost(hostname) {
@@ -102,7 +133,7 @@ function hostMatches(host, list) {
  * Builds a working, appropriately-tracked link for any of your
  * platforms, or returns null only when the link is genuinely broken
  * (missing / not a valid URL). Never blocks a link just for being a
- * non-Amazon platform.
+ * non-Amazon platform or a shortener domain.
  */
 export function buildAffiliateLink(rawUrl, { context = "" } = {}) {
   if (!rawUrl) {
@@ -130,16 +161,17 @@ export function buildAffiliateLink(rawUrl, { context = "" } = {}) {
     return u.toString();
   }
 
-  // Known network redirect domain — trust it as already tracked,
-  // pass through unchanged.
+  // Known network / shortener redirect domain (Cuelinks, EarnKaro,
+  // bitli.in, etc.) — trust it as already tracked, pass through
+  // unchanged.
   if (hostMatches(host, NETWORK_HOSTS)) {
     return u.toString();
   }
 
-  // Direct merchant domain (Myntra/Flipkart/AJIO) not wrapped by a
-  // known network domain. Still render it — but warn, since a raw
-  // merchant link with no visible tracking params is worth
-  // double-checking against your network dashboard.
+  // Direct merchant domain (Myntra/Flipkart/AJIO/FirstCry/Meesho) not
+  // wrapped by a known network domain. Still render it — but warn,
+  // since a raw merchant link with no visible tracking params is
+  // worth double-checking against your network dashboard.
   if (hostMatches(host, MERCHANT_HOSTS)) {
     const hasTrackingParams = [...u.searchParams.keys()].length > 0;
     if (!hasTrackingParams) {
