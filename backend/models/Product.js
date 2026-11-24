@@ -10,7 +10,7 @@ const STORE_CATEGORIES = {
              'Kids Clothing','Kids Footwear','Kids Accessories','Beauty'],
   flipkart: ['Mobiles','Electronics','Fashion','Home & Furniture','Appliances',
              'Beauty','Grocery','Sports','Toys','Books','Automotive'],
-             blinkit: [
+  blinkit: [
   'Fruits & Vegetables',
   'Dairy, Bread & Eggs',
   'Atta, Rice & Dal',
